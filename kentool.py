@@ -526,7 +526,11 @@ if __name__ == '__main__':
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
     # 2. flash bootloader and firmware
-    firmware_bin = open(args.firmware, 'rb')
+    try:
+        firmware_bin = open(args.firmware, 'rb')
+    except FileNotFoundError:
+        print(ERROR_MSG,'Unable to find the firmware at ', args.firmware, BASH_TIPS['DEFAULT'])
+        sys.exit(1)
 
     # install bootloader at 0x80000000
     if args.bootloader:
