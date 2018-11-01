@@ -1,4 +1,4 @@
-#!env python3
+#!/usr/bin/env python3
 import time
 import sys
 import zlib
@@ -258,7 +258,7 @@ class MAIXLoader:
             time.sleep(1)
 
     def boot(self, address=0x80000000):
-        print('[INFO] Boot from', '0x' + hex(address))
+        print('[INFO] Boot from', hex(address))
         out = struct.pack('II', address, 0)
 
         crc32_checksum = struct.pack('I', binascii.crc32(out) & 0xFFFFFFFF)
