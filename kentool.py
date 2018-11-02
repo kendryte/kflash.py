@@ -1,4 +1,4 @@
-#!env python3
+#!/usr/bin/env python3
 import sys
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
@@ -325,6 +325,7 @@ class MAIXLoader:
 
     def boot(self, address=0x80000000):
         print(INFO_MSG,"Booting From " + hex(address),BASH_TIPS['DEFAULT'])
+
         out = struct.pack('II', address, 0)
 
         crc32_checksum = struct.pack('I', binascii.crc32(out) & 0xFFFFFFFF)
