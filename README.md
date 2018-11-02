@@ -61,7 +61,7 @@ python3 kentool.py --device /dev/ttyUSB0 --baudrate 115200 firmware.bin
 
 ### Windows
 
-The easiest way is using [kendryte-flash-windows](git@github.com:kendryte/kendryte-flash-windows.git) or [WSL](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux)
+The easiest way is using [kendryte-flash-windows](https://github.com/kendryte/kendryte-flash-windows) or [WSL](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux)
 
 #### Install python3 and pip of python3
 
