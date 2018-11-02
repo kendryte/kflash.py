@@ -55,11 +55,13 @@ For example, the terminal may output like this:
 
 #### Program k210 board under terminal
 
+```bash
 python3 kentool.py --device /dev/ttyUSB0 --baudrate 115200 firmware.bin
+```
 
 ### Windows
 
-The easiest way is use [kendryte-flash-windows](git@github.com:kendryte/kendryte-flash-windows.git)
+The easiest way is using [kendryte-flash-windows](git@github.com:kendryte/kendryte-flash-windows.git) or [WSL](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux)
 
 #### Install python3 and pip of python3
 
@@ -70,4 +72,6 @@ Install python3, and extract pip3 to install it.
 
 #### Program k210 board under console
 
+```bash
 python3 kentool.py --device COM3 --baudrate 115200 firmware.bin
+```
