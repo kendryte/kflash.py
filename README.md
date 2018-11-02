@@ -65,8 +65,8 @@ The easiest way is using [kendryte-flash-windows](https://github.com/kendryte/ke
 
 #### Install python3 and pip of python3
 
-https://www.python.org/downloads/
-https://pypi.python.org/pypi/pip#downloads
+- [Download Python : https://www.python.org/downloads/](https://www.python.org/downloads/)
+- [Download Pip : https://pypi.python.org/pypi/pip#downloads](https://pypi.python.org/pypi/pip#downloads)
 
 Install python3, and extract pip3 to install it.
 
