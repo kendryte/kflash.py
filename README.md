@@ -1,4 +1,4 @@
-# kentool.py
+# kflash.py
 
 ## USAGE
 
@@ -56,7 +56,7 @@ For example, the terminal may output like this:
 #### Program k210 board under terminal
 
 ```bash
-python3 kentool.py --device /dev/ttyUSB0 --baudrate 115200 firmware.bin
+python3 kflash.py --device /dev/ttyUSB0 --baudrate 115200 firmware.bin
 ```
 
 ### Windows
@@ -73,5 +73,5 @@ Install python3, and extract pip3 to install it.
 #### Program k210 board under console
 
 ```bash
-python3 kentool.py --device COM3 --baudrate 115200 firmware.bin
+python3 kflash.py --device COM3 --baudrate 115200 firmware.bin
 ```
