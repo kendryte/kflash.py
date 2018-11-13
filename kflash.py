@@ -31,6 +31,7 @@ except ImportError:
     print(ERROR_MSG,'PySerial must be installed, run '+BASH_TIPS['GREEN']+'`pip3 install pyserial`',BASH_TIPS['DEFAULT'])
     sys.exit(1)
 
+# AES is from: https://github.com/ricmoo/pyaes, Copyright by Richard Moore
 class AES:
     '''Encapsulates the AES block cipher.
     You generally should not need this. Use the AESModeOfOperation classes
