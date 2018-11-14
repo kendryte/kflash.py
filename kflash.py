@@ -648,7 +648,9 @@ class MAIXLoader:
 
         # 加密
         if aes_key:
-            firmware_bin = AES_128_CBC.new(key=aes_key).encrypt(firmware_bin.ljust(round(len(firmware_bin)/16 + 0.5) * 16, b'\x00'))
+            enc = AES_128_CBC(aes_key, iv=b'\x00'*16).encrypt
+            padded = firmware_bin + b'\x00'*15 # zero pad
+            firmware_bin = b''.join([enc(padded[i*16:i*16+16]) for i in range(len(padded)//16)])
 
         firmware_len = len(firmware_bin)
 
