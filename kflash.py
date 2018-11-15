@@ -651,7 +651,7 @@ class MAIXLoader:
         # 1. 刷入 flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
-    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = False):
+    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = True):
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
         if sha256Prefix == True:
