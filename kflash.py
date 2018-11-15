@@ -641,32 +641,34 @@ class MAIXLoader:
         # 1. 刷入 flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
-    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0x0):
+    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = False):
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
-        # 固件加上头
-        # 格式: SHA256(after)(32bytes) + AES_CIPHER_FLAG (1byte) + firmware_size(4bytes) + firmware_data
+        if sha256Prefix == True:
+            # 固件加上头
+            # 格式: SHA256(after)(32bytes) + AES_CIPHER_FLAG (1byte) + firmware_size(4bytes) + firmware_data
+            aes_cipher_flag = b'\x01' if aes_key else b'\x00'
 
-        aes_cipher_flag = b'\x01' if aes_key else b'\x00'
+            # 加密
+            if aes_key:
+                enc = AES_128_CBC(aes_key, iv=b'\x00'*16).encrypt
+                padded = firmware_bin + b'\x00'*15 # zero pad
+                firmware_bin = b''.join([enc(padded[i*16:i*16+16]) for i in range(len(padded)//16)])
 
-        # 加密
-        if aes_key:
-            enc = AES_128_CBC(aes_key, iv=b'\x00'*16).encrypt
-            padded = firmware_bin + b'\x00'*15 # zero pad
-            firmware_bin = b''.join([enc(padded[i*16:i*16+16]) for i in range(len(padded)//16)])
+            firmware_len = len(firmware_bin)
 
-        firmware_len = len(firmware_bin)
+            data = aes_cipher_flag + struct.pack('I', firmware_len) + firmware_bin
 
-        data = aes_cipher_flag + struct.pack('I', firmware_len) + firmware_bin
+            sha256_hash = hashlib.sha256(data).digest()
 
-        sha256_hash = hashlib.sha256(data).digest()
+            firmware_with_header = data + sha256_hash
 
-        firmware_with_header = data + sha256_hash
-
-        total_chunk = math.ceil(len(firmware_with_header)/4096)
-
-        # 3. 分片刷入固件
-        data_chunks = chunks(firmware_with_header, 4096)  # 4kb for a sector
+            total_chunk = math.ceil(len(firmware_with_header)/4096)
+            # 3. 分片刷入固件
+            data_chunks = chunks(firmware_with_header, 4096)  # 4kb for a sector
+        else:
+            total_chunk = math.ceil(len(firmware_bin)/4096)
+            data_chunks = chunks(firmware_bin, 4096)
 
         for n, chunk in enumerate(data_chunks):
             chunk = chunk.ljust(4096, b'\x00')  # align by 4kb
@@ -753,7 +755,7 @@ if __name__ == '__main__':
 
     loader.flash_greeting()
 
-    loader.change_baudrate(args.baudrate)
+    #loader.change_baudrate(args.baudrate)
 
     loader.init_flash(args.chip)
 
@@ -767,14 +769,14 @@ if __name__ == '__main__':
                 print(ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
                 sys.exit(1)
         
-            fFlashList = open(tmpdir + "/flash-list.json", "r")
+            fFlashList = open(f'{tmpdir}/flash-list.json', "r")
             sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
             fFlashList.close()
             jsonFlashList = json.loads(sFlashList)
             for lBinFiles in jsonFlashList['files']:
-                print(INFO_MSG,"Writing",lBinFiles['bin'],"into","0x%08x"%int(lBinFiles['address'], 0),"...",BASH_TIPS['DEFAULT'])
-                firmware_bin = open(tmpdir + "/" + lBinFiles['bin'], "rb")
-                loader.flash_firmware(firmware_bin.read(), None, int(lBinFiles['address'], 0))
+                print(INFO_MSG,"Writing",lBinFiles['bin'],"into","0x%08x"%int(lBinFiles['address'], 0),BASH_TIPS['DEFAULT'])
+                firmware_bin = open(f'{tmpdir}/{lBinFiles["bin"]}', "rb")
+                loader.flash_firmware(firmware_bin.read(), None, int(lBinFiles['address'], 0), lBinFiles['sha256Prefix'])
                 firmware_bin.close()
     else:
         if args.key:
