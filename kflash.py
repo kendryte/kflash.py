@@ -623,9 +623,19 @@ class MAIXLoader:
 
             out = struct.pack('HH', 0xd4, 0x00) + crc32_checksum + out + chunk
             #print("[$$$$]", binascii.hexlify(out[:32]).decode())
-            sent = self.write(out)
-            #print('[INFO]', 'sent', sent, 'bytes', 'checksum', crc32_checksum)
-            self.flash_recv_debug()
+            iRetryCount = 0
+            while True:
+                try:
+                    sent = self.write(out)
+                    #print('[INFO]', 'sent', sent, 'bytes', 'checksum', crc32_checksum)
+                    self.flash_recv_debug()
+                except:
+                    iRetryCount = iRetryCount + 1
+                    if iRetryCount > 15:
+                        print(ERROR_MSG,"Error Count Exceeded, Stop Trying",BASH_TIPS['DEFAULT'])
+                        sys.exit(1)
+                    continue
+                break
             address += len(chunk)
             
             
@@ -688,6 +698,7 @@ if __name__ == '__main__':
     parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
+    parser.add_argument("-t", "--terminal", help="Start a terminal after finish", default=False, action="store_true")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -755,7 +766,7 @@ if __name__ == '__main__':
 
     loader.flash_greeting()
 
-    #loader.change_baudrate(args.baudrate)
+    loader.change_baudrate(args.baudrate)
 
     loader.init_flash(args.chip)
 
@@ -791,14 +802,9 @@ if __name__ == '__main__':
     # 3. boot
     loader.reset_to_boot()
     print(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
+    loader._port.close()
 
-    try:
-        while 1:
-            out = b''
-            while loader._port.inWaiting() > 0:
-                out += loader._port.read(1)
-            print("".join(map(chr, out)), end='')
-    except KeyboardInterrupt:
-        sys.exit(0)
-
-
+    if(args.terminal == True):
+        import serial.tools.miniterm
+        sys.argv = ['']
+        serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=False, default_rts=False)
