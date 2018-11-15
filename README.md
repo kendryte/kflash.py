@@ -1,29 +1,47 @@
-# kflash.py
+# kflash, A Python-based Kendryte K210 UART ISP Utility
 
-## USAGE
-
-### Linux
-
-#### Install base tools
-
-Install python3, pip and pyserial.
-
-Under ubuntu, debian:
-
+## Sample Usage
 ```bash
-sudo apt-get update
-sudo apt-get install python3 python3-pip
-sudo pip3 install pyserial
+# Linux or macOS
+python3 kflash.py firmware.bin
+
+# Windows CMD or PowerShell
+python kflash.py firmware.bin
+
+# Windows Subsystem for Linux
+sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
 ```
 
-Under Fedora
+## Requirments
+
+- Python3 
+- PySerial  
+
+### Windows 
+ - Download and Install [Python3 at python.org](https://www.python.org/downloads/release/python-367/)
+ - Download the [get-pip.py at https://bootstrap.pypa.io/get-pip.py](https://bootstrap.pypa.io/get-pip.py)
+ - Start CMD or PowerShell Terminal and run the following command
+ ```bash
+ python get-pip.py 
+ python -mpip install pyserial
+ ```
+---------
+### Ubuntu, Debian
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip
+sudo pip3 install pyserial
+```
+---------
+###  Fedora
 
 ```bash
 sudo dnf install python3
 sudo python3 -m pip install pyserial
 ```
-
-Under CentOS:
+---------
+### CentOS:
 
 ```bash
 sudo yum -y install epel-release
@@ -33,45 +51,63 @@ sudo ln -s /bin/pip3.6 /usr/bin/pip3
 sudo pip3 install pyserial
 ```
 
-#### Add your self to dialout group to use usb-to-uart devices
-
+## Trouble Shooting
+ --------
+## Could not open port /dev/tty*: [Errno 13] Permission denied: '/dev/tty*'
+> For Windows Subsystem for Linux, you may have to use sudo due to its docker like feature 
+ - Add your self to a dialout group to use usb-to-uart devices by 
 ```bash
 sudo usermod -a -G dialout $(whoami)
 ```
+ - Logout, and log in.
+ --------
+## UART Auto Detecting is Not Working, or Select the Wrong UART Port
 
-Logout, and login.
+### Windows
+ - Check the COM Number for your device at the Device Manager, such as **USB-SERIAL CH340(COM13)**.
+```bash
+python kflash.py -p COM13 firmware.bin
+```
+### Windows Subsystem For Linux(WSL)
+ - Check the COM Number for your device at the Device Manager, such as **USB-SERIAL CH340(COM13)**.
+```bash
+sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # You have to use *sudo* here
+```
 
-#### Check usb device
+### Linux
 
+ - Check the USB Device Name, Usually presented as ttyUSB*
 ```bash
 ls /dev/ttyUSB*
 ```
-
-For example, the terminal may output like this:
-
+ - It will print :
 ```bash
+$ ls /dev/ttyUSB*
 /dev/ttyUSB0
+/dev/ttyUSB2
+/dev/ttyUSB13
 ```
-
-#### Program k210 board under terminal
-
+ - Choose the one you think belongs to your device, or you may try multimule names.
 ```bash
-python3 kflash.py --device /dev/ttyUSB0 --baudrate 115200 firmware.bin
+python3 kflash.py -p /dev/ttyUSB13 firmware.bin
 ```
 
-### Windows
-
-The easiest way is using [kendryte-flash-windows](https://github.com/kendryte/kendryte-flash-windows) or [WSL](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux)
-
-#### Install python3 and pip of python3
-
-- [Download Python : https://www.python.org/downloads/](https://www.python.org/downloads/)
-- [Download Pip : https://pypi.python.org/pypi/pip#downloads](https://pypi.python.org/pypi/pip#downloads)
-
-Install python3, and extract pip3 to install it.
-
-#### Program k210 board under console
-
+### macOS
+ - Check the USB Device Name, Usually presented as cu.*
 ```bash
-python3 kflash.py --device COM3 --baudrate 115200 firmware.bin
+ls /dev/cu.*
 ```
+ - It will print :
+```bash
+$ ls /dev/ttyUSB*
+/dev/cu.wchusbserial1410
+/dev/cu.wchusbserial1437
+/dev/cu.SLAB_USBtoUART2333
+```
+ - Choose the one you think belongs to your device, or you may try multimule names.
+```bash
+python3 kflash.py -p /dev/cu.wchusbserial1410 firmware.bin
+```
+#### You may unable to find the device even in the /dev, check the link below for drivers.
+ - For K210 and Sipeed Dan -> [WCH CH34x USB2UART Chip](https://github.com/adrianmihalko/ch340g-ch34g-ch34x-mac-os-x-driver)
+____________
