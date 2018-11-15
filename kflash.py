@@ -9,6 +9,9 @@ import binascii
 import hashlib
 import argparse
 import math
+import zipfile, tempfile
+import json
+import re
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
                     DEFAULT='\033[39', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
@@ -638,7 +641,7 @@ class MAIXLoader:
         # 1. 刷入 flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
-    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None):
+    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0x0):
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
         # 固件加上头
@@ -654,13 +657,13 @@ class MAIXLoader:
 
         firmware_len = len(firmware_bin)
 
-        total_chunk = math.ceil(firmware_len/4096)
-
         data = aes_cipher_flag + struct.pack('I', firmware_len) + firmware_bin
 
         sha256_hash = hashlib.sha256(data).digest()
 
         firmware_with_header = data + sha256_hash
+
+        total_chunk = math.ceil(len(firmware_with_header)/4096)
 
         # 3. 分片刷入固件
         data_chunks = chunks(firmware_with_header, 4096)  # 4kb for a sector
@@ -670,8 +673,8 @@ class MAIXLoader:
 
             # 3.1 刷入一个dataframe
             #print('[INFO]', 'Write firmware data piece')
-            self.dump_to_flash(chunk, address=n * 4096)
-            printProgressBar(n+1, total_chunk, prefix = 'Downloading Program:', suffix = 'Complete', length = 50)
+            self.dump_to_flash(chunk, address= n * 4096 + address_offset)
+            printProgressBar(n+1, total_chunk, prefix = 'Downloading:', suffix = 'Complete', length = 50)
 
 
 if __name__ == '__main__':
@@ -754,14 +757,34 @@ if __name__ == '__main__':
 
     loader.init_flash(args.chip)
 
-    if args.key:
-        aes_key = binascii.a2b_hex(args.key)
-        if len(aes_key) != 16:
-            raise ValueError('AES key must by 16 bytes')
-
-        loader.flash_firmware(firmware_bin.read(), aes_key=aes_key)
+    if ".kfpkg" in args.firmware:
+        firmware_bin.close()    
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                with zipfile.ZipFile(args.firmware) as zf:
+                    zf.extractall(tmpdir)  
+            except zipfile.BadZipFile:
+                print(ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
+                sys.exit(1)
+        
+            fFlashList = open(tmpdir + "/flash-list.json", "r")
+            sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
+            fFlashList.close()
+            jsonFlashList = json.loads(sFlashList)
+            for lBinFiles in jsonFlashList['files']:
+                print(INFO_MSG,"Writing",lBinFiles['bin'],"into","0x%08x"%int(lBinFiles['address'], 0),"...",BASH_TIPS['DEFAULT'])
+                firmware_bin = open(tmpdir + "/" + lBinFiles['bin'], "rb")
+                loader.flash_firmware(firmware_bin.read(), None, int(lBinFiles['address'], 0))
+                firmware_bin.close()
     else:
-        loader.flash_firmware(firmware_bin.read())
+        if args.key:
+            aes_key = binascii.a2b_hex(args.key)
+            if len(aes_key) != 16:
+                raise ValueError('AES key must by 16 bytes')
+
+            loader.flash_firmware(firmware_bin.read(), aes_key=aes_key)
+        else:
+            loader.flash_firmware(firmware_bin.read())
 
     # 3. boot
     loader.reset_to_boot()
