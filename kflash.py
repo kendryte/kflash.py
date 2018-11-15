@@ -37,7 +37,7 @@ class AES:
     You generally should not need this. Use the AESModeOfOperation classes
     below instead.'''
 
-    def _compact_word(word):
+    def _compact_word(self, word):
         return (word[0] << 24) | (word[1] << 16) | (word[2] << 8) | word[3]
 
     # Number of rounds by keysize
@@ -151,7 +151,7 @@ class AES:
         a = [0, 0, 0, 0]
 
         # Convert plaintext to (ints ^ key)
-        t = [(AES._compact_word(plaintext[4 * i:4 * i + 4]) ^ self._Ke[0][i]) for i in range(0, 4)]
+        t = [(self._compact_word(plaintext[4 * i:4 * i + 4]) ^ self._Ke[0][i]) for i in range(0, 4)]
 
         # Apply round transforms
         for r in range(1, rounds):
@@ -185,7 +185,7 @@ class AES:
         a = [0, 0, 0, 0]
 
         # Convert ciphertext to (ints ^ key)
-        t = [(AES._compact_word(ciphertext[4 * i:4 * i + 4]) ^ self._Kd[0][i]) for i in range(0, 4)]
+        t = [(self._compact_word(ciphertext[4 * i:4 * i + 4]) ^ self._Kd[0][i]) for i in range(0, 4)]
 
         # Apply round transforms
         for r in range(1, rounds):
