@@ -4,12 +4,15 @@
 ```bash
 # Linux or macOS
 python3 kflash.py firmware.bin
+python3 kflash.py -t firmware.bin # Open a Serial Terminal After Finish
 
 # Windows CMD or PowerShell
 python kflash.py firmware.bin
+python kflash.py -t firmware.bin # Open a Serial Terminal After Finish
 
 # Windows Subsystem for Linux
 sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
+sudo python3 kflash.py -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
 ```
 
 ## Requirments
@@ -25,6 +28,14 @@ sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13
  python get-pip.py 
  python -mpip install pyserial
  ```
+---------
+### macOS
+```bash
+# Install Homebrew, an awesome package manager for macOS
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" 
+brew install python
+python3 -mpip3 install pyserial
+```
 ---------
 ### Ubuntu, Debian
 
