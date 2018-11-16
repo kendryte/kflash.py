@@ -39,8 +39,8 @@ class AES:
     '''Encapsulates the AES block cipher.
     You generally should not need this. Use the AESModeOfOperation classes
     below instead.'''
-
-    def _compact_word(self, word):
+    @staticmethod
+    def _compact_word(word):
         return (word[0] << 24) | (word[1] << 16) | (word[2] << 8) | word[3]
 
     # Number of rounds by keysize
@@ -154,7 +154,7 @@ class AES:
         a = [0, 0, 0, 0]
 
         # Convert plaintext to (ints ^ key)
-        t = [(self._compact_word(plaintext[4 * i:4 * i + 4]) ^ self._Ke[0][i]) for i in range(0, 4)]
+        t = [(AES._compact_word(plaintext[4 * i:4 * i + 4]) ^ self._Ke[0][i]) for i in range(0, 4)]
 
         # Apply round transforms
         for r in range(1, rounds):
@@ -188,7 +188,7 @@ class AES:
         a = [0, 0, 0, 0]
 
         # Convert ciphertext to (ints ^ key)
-        t = [(self._compact_word(ciphertext[4 * i:4 * i + 4]) ^ self._Kd[0][i]) for i in range(0, 4)]
+        t = [(AES._compact_word(ciphertext[4 * i:4 * i + 4]) ^ self._Kd[0][i]) for i in range(0, 4)]
 
         # Apply round transforms
         for r in range(1, rounds):
@@ -693,7 +693,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
     parser.add_argument("-c", "--chip", help="SPI Flash type, 1 for in-chip, 0 for on-board", default=1)
-    parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=2000000)
+    parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
     parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
     parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
