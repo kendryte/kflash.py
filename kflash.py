@@ -623,15 +623,15 @@ class MAIXLoader:
 
             out = struct.pack('HH', 0xd4, 0x00) + crc32_checksum + out + chunk
             #print("[$$$$]", binascii.hexlify(out[:32]).decode())
-            iRetryCount = 0
+            retry_count = 0
             while True:
                 try:
                     sent = self.write(out)
                     #print('[INFO]', 'sent', sent, 'bytes', 'checksum', crc32_checksum)
                     self.flash_recv_debug()
                 except:
-                    iRetryCount = iRetryCount + 1
-                    if iRetryCount > 15:
+                    retry_count = retry_count + 1
+                    if retry_count > 15:
                         print(ERROR_MSG,"Error Count Exceeded, Stop Trying",BASH_TIPS['DEFAULT'])
                         sys.exit(1)
                     continue
@@ -720,11 +720,11 @@ if __name__ == '__main__':
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
     
-    retryCount = 0
+    retry_count = 0
 
     while 1:
-        retryCount = retryCount + 1
-        if retryCount > 15:
+        retry_count = retry_count + 1
+        if retry_count > 15:
             print("\n" + ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
             sys.exit(1)
         try:
