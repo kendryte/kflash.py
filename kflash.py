@@ -9,6 +9,9 @@ import binascii
 import hashlib
 import argparse
 import math
+import zipfile, tempfile
+import json
+import re
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
                     DEFAULT='\033[39', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
@@ -36,7 +39,7 @@ class AES:
     '''Encapsulates the AES block cipher.
     You generally should not need this. Use the AESModeOfOperation classes
     below instead.'''
-
+    @staticmethod
     def _compact_word(word):
         return (word[0] << 24) | (word[1] << 16) | (word[2] << 8) | word[3]
 
@@ -620,9 +623,19 @@ class MAIXLoader:
 
             out = struct.pack('HH', 0xd4, 0x00) + crc32_checksum + out + chunk
             #print("[$$$$]", binascii.hexlify(out[:32]).decode())
-            sent = self.write(out)
-            #print('[INFO]', 'sent', sent, 'bytes', 'checksum', crc32_checksum)
-            self.flash_recv_debug()
+            retry_count = 0
+            while True:
+                try:
+                    sent = self.write(out)
+                    #print('[INFO]', 'sent', sent, 'bytes', 'checksum', crc32_checksum)
+                    self.flash_recv_debug()
+                except:
+                    retry_count = retry_count + 1
+                    if retry_count > 15:
+                        print(ERROR_MSG,"Error Count Exceeded, Stop Trying",BASH_TIPS['DEFAULT'])
+                        sys.exit(1)
+                    continue
+                break
             address += len(chunk)
             
             
@@ -638,40 +651,42 @@ class MAIXLoader:
         # 1. 刷入 flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
-    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None):
+    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = True):
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
-        # 固件加上头
-        # 格式: SHA256(after)(32bytes) + AES_CIPHER_FLAG (1byte) + firmware_size(4bytes) + firmware_data
+        if sha256Prefix == True:
+            # 固件加上头
+            # 格式: SHA256(after)(32bytes) + AES_CIPHER_FLAG (1byte) + firmware_size(4bytes) + firmware_data
+            aes_cipher_flag = b'\x01' if aes_key else b'\x00'
 
-        aes_cipher_flag = b'\x01' if aes_key else b'\x00'
+            # 加密
+            if aes_key:
+                enc = AES_128_CBC(aes_key, iv=b'\x00'*16).encrypt
+                padded = firmware_bin + b'\x00'*15 # zero pad
+                firmware_bin = b''.join([enc(padded[i*16:i*16+16]) for i in range(len(padded)//16)])
 
-        # 加密
-        if aes_key:
-            enc = AES_128_CBC(aes_key, iv=b'\x00'*16).encrypt
-            padded = firmware_bin + b'\x00'*15 # zero pad
-            firmware_bin = b''.join([enc(padded[i*16:i*16+16]) for i in range(len(padded)//16)])
+            firmware_len = len(firmware_bin)
 
-        firmware_len = len(firmware_bin)
+            data = aes_cipher_flag + struct.pack('I', firmware_len) + firmware_bin
 
-        total_chunk = math.ceil(firmware_len/4096)
+            sha256_hash = hashlib.sha256(data).digest()
 
-        data = aes_cipher_flag + struct.pack('I', firmware_len) + firmware_bin
+            firmware_with_header = data + sha256_hash
 
-        sha256_hash = hashlib.sha256(data).digest()
-
-        firmware_with_header = data + sha256_hash
-
-        # 3. 分片刷入固件
-        data_chunks = chunks(firmware_with_header, 4096)  # 4kb for a sector
+            total_chunk = math.ceil(len(firmware_with_header)/4096)
+            # 3. 分片刷入固件
+            data_chunks = chunks(firmware_with_header, 4096)  # 4kb for a sector
+        else:
+            total_chunk = math.ceil(len(firmware_bin)/4096)
+            data_chunks = chunks(firmware_bin, 4096)
 
         for n, chunk in enumerate(data_chunks):
             chunk = chunk.ljust(4096, b'\x00')  # align by 4kb
 
             # 3.1 刷入一个dataframe
             #print('[INFO]', 'Write firmware data piece')
-            self.dump_to_flash(chunk, address=n * 4096)
-            printProgressBar(n+1, total_chunk, prefix = 'Downloading Program:', suffix = 'Complete', length = 50)
+            self.dump_to_flash(chunk, address= n * 4096 + address_offset)
+            printProgressBar(n+1, total_chunk, prefix = 'Downloading:', suffix = 'Complete', length = 50)
 
 
 if __name__ == '__main__':
@@ -683,6 +698,7 @@ if __name__ == '__main__':
     parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
+    parser.add_argument("-t", "--terminal", help="Start a terminal after finish", default=False, action="store_true")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -704,11 +720,11 @@ if __name__ == '__main__':
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
     
-    retryCount = 0
+    retry_count = 0
 
     while 1:
-        retryCount = retryCount + 1
-        if retryCount > 15:
+        retry_count = retry_count + 1
+        if retry_count > 15:
             print("\n" + ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
             sys.exit(1)
         try:
@@ -750,30 +766,46 @@ if __name__ == '__main__':
 
     loader.flash_greeting()
 
-    loader.change_baudrate(args.baudrate)
+    if args.baudrate != 115200:
+        loader.change_baudrate(args.baudrate)
 
     loader.init_flash(args.chip)
 
-    if args.key:
-        aes_key = binascii.a2b_hex(args.key)
-        if len(aes_key) != 16:
-            raise ValueError('AES key must by 16 bytes')
-
-        loader.flash_firmware(firmware_bin.read(), aes_key=aes_key)
+    if ".kfpkg" in args.firmware:
+        firmware_bin.close()    
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                with zipfile.ZipFile(args.firmware) as zf:
+                    zf.extractall(tmpdir)  
+            except zipfile.BadZipFile:
+                print(ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
+                sys.exit(1)
+        
+            fFlashList = open(f'{tmpdir}/flash-list.json', "r")
+            sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
+            fFlashList.close()
+            jsonFlashList = json.loads(sFlashList)
+            for lBinFiles in jsonFlashList['files']:
+                print(INFO_MSG,"Writing",lBinFiles['bin'],"into","0x%08x"%int(lBinFiles['address'], 0),BASH_TIPS['DEFAULT'])
+                firmware_bin = open(f'{tmpdir}/{lBinFiles["bin"]}', "rb")
+                loader.flash_firmware(firmware_bin.read(), None, int(lBinFiles['address'], 0), lBinFiles['sha256Prefix'])
+                firmware_bin.close()
     else:
-        loader.flash_firmware(firmware_bin.read())
+        if args.key:
+            aes_key = binascii.a2b_hex(args.key)
+            if len(aes_key) != 16:
+                raise ValueError('AES key must by 16 bytes')
+
+            loader.flash_firmware(firmware_bin.read(), aes_key=aes_key)
+        else:
+            loader.flash_firmware(firmware_bin.read())
 
     # 3. boot
     loader.reset_to_boot()
     print(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
+    loader._port.close()
 
-    try:
-        while 1:
-            out = b''
-            while loader._port.inWaiting() > 0:
-                out += loader._port.read(1)
-            print("".join(map(chr, out)), end='')
-    except KeyboardInterrupt:
-        sys.exit(0)
-
-
+    if(args.terminal == True):
+        import serial.tools.miniterm
+        sys.argv = ['']
+        serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=False, default_rts=False)
