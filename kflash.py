@@ -12,6 +12,7 @@ import math
 import zipfile, tempfile
 import json
 import re
+import os
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
                     DEFAULT='\033[39', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
@@ -781,13 +782,13 @@ if __name__ == '__main__':
                 print(ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
                 sys.exit(1)
         
-            fFlashList = open(f'{tmpdir}/flash-list.json', "r")
+            fFlashList = open(os.path.join(tmpdir, 'flash-list.json'), "r")
             sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
             fFlashList.close()
             jsonFlashList = json.loads(sFlashList)
             for lBinFiles in jsonFlashList['files']:
                 print(INFO_MSG,"Writing",lBinFiles['bin'],"into","0x%08x"%int(lBinFiles['address'], 0),BASH_TIPS['DEFAULT'])
-                firmware_bin = open(f'{tmpdir}/{lBinFiles["bin"]}', "rb")
+                firmware_bin = open(os.path.join(tmpdir, lBinFiles["bin"]), "rb")
                 loader.flash_firmware(firmware_bin.read(), None, int(lBinFiles['address'], 0), lBinFiles['sha256Prefix'])
                 firmware_bin.close()
     else:
