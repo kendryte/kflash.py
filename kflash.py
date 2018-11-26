@@ -269,7 +269,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
     # Print New Line on Complete
-    if iteration == total: 
+    if iteration == total:
         print()
 
 def slip_reader(port):
@@ -512,7 +512,7 @@ class MAIXLoader:
         op, reason, text = ISPResponse.parse(self.recv_one_return())
 
         #print('MAIX return op:', ISPResponse.ISPOperation(op).name, 'reason:', ISPResponse.ErrorCode(reason).name)
-        
+
 
     def flash_greeting(self):
         while 1:
@@ -594,7 +594,7 @@ class MAIXLoader:
                 #print('[INFO]', 'sent', sent, 'bytes', 'checksum', binascii.hexlify(crc32_checksum).decode())
 
                 address += len(chunk)
-                
+
                 if self.recv_debug():
                     break
             printProgressBar(n+1, total_chunk, prefix = 'Downloading ISP:', suffix = 'Complete', length = 50)
@@ -614,7 +614,7 @@ class MAIXLoader:
         data_chunks = chunks(data, DATAFRAME_SIZE)
         #print('[DEBUG] flash dataframe | data length:', len(data))
 
-       
+
 
         for n, chunk in enumerate(data_chunks):
             #print('[INFO] sending chunk', i, '@address', hex(address))
@@ -638,8 +638,8 @@ class MAIXLoader:
                     continue
                 break
             address += len(chunk)
-            
-            
+
+
 
     def flash_erase(self):
         #print('[DEBUG] erasing spi flash.')
@@ -720,7 +720,7 @@ if __name__ == '__main__':
 
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
-    
+
     retry_count = 0
 
     while 1:
@@ -735,7 +735,7 @@ if __name__ == '__main__':
             break
         except TimeoutError:
             pass
-            
+
         try:
             print('_', end='')
             loader.reset_to_isp_kd233()
@@ -743,7 +743,7 @@ if __name__ == '__main__':
             break
         except TimeoutError:
             pass
-    timeout = 3  
+    timeout = 3
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
     # 2. flash bootloader and firmware
@@ -774,15 +774,15 @@ if __name__ == '__main__':
 
     if ".kfpkg" == os.path.splitext(args.firmware)[1]:
         print(INFO_MSG,"Extracting KFPKG ... ", BASH_TIPS['DEFAULT'])
-        firmware_bin.close()    
+        firmware_bin.close()
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
                 with zipfile.ZipFile(args.firmware) as zf:
-                    zf.extractall(tmpdir)  
+                    zf.extractall(tmpdir)
             except zipfile.BadZipFile:
                 print(ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
                 sys.exit(1)
-        
+
             fFlashList = open(os.path.join(tmpdir, 'flash-list.json'), "r")
             sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
             fFlashList.close()
