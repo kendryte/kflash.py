@@ -772,7 +772,8 @@ if __name__ == '__main__':
 
     loader.init_flash(args.chip)
 
-    if ".kfpkg" in args.firmware:
+    if ".kfpkg" == os.path.splitext(args.firmware)[1]:
+        print(INFO_MSG,"Extracting KFPKG ... ", BASH_TIPS['DEFAULT'])
         firmware_bin.close()    
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
