@@ -26,6 +26,8 @@ VID_LIST_FOR_AUTO_LOOKUP = "(1A86)|(0403)|(067B)|(10C4)"
 #                            WCH    FTDI    PL     CL
 timeout = 0.5
 
+MAX_RETRY_TIMES = 10
+
 class TimeoutError(Exception): pass
 
 try:
@@ -515,17 +517,31 @@ class MAIXLoader:
 
 
     def flash_greeting(self):
+        retry_count = 0
         while 1:
             self._port.write(b'\xc0\xd2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0')
-            op, reason, text = FlashModeResponse.parse(self.recv_one_return())
+            retry_count = retry_count + 1
+            try:
+                op, reason, text = FlashModeResponse.parse(self.recv_one_return())
+            except IndexError:
+                if retry_count > MAX_RETRY_TIMES:
+                    print(ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
+                    sys.exit(1)
+                time.sleep(0.1)
+                continue
+                print(WARN_MSG,"Unexcepted Return recevied, retrying...",BASH_TIPS['DEFAULT'])
             #print('MAIX return op:', FlashModeResponse.Operation(op).name, 'reason:',
             #      FlashModeResponse.ErrorCode(reason).name)
             if FlashModeResponse.Operation(op) == FlashModeResponse.Operation.ISP_NOP:
                 print(INFO_MSG,"Boot to Flashmode Successfully",BASH_TIPS['DEFAULT'])
                 break
-
-            print('wait 1 sec')
-            time.sleep(1)
+            else:
+                if retry_count > MAX_RETRY_TIMES:
+                    print(ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
+                    sys.exit(1)
+                print(WARN_MSG,"Unexcepted Return recevied, retrying...",BASH_TIPS['DEFAULT'])
+                time.sleep(0.1)
+                continue
 
     def boot(self, address=0x80000000):
         print(INFO_MSG,"Booting From " + hex(address),BASH_TIPS['DEFAULT'])
@@ -632,7 +648,7 @@ class MAIXLoader:
                     self.flash_recv_debug()
                 except:
                     retry_count = retry_count + 1
-                    if retry_count > 15:
+                    if retry_count > MAX_RETRY_TIMES:
                         print(ERROR_MSG,"Error Count Exceeded, Stop Trying",BASH_TIPS['DEFAULT'])
                         sys.exit(1)
                     continue
