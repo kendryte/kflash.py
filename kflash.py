@@ -494,7 +494,7 @@ class MAIXLoader:
         self._port.dtr = True
         time.sleep(0.01)
 
-    def reset_to_boot(self):
+    def reset_to_boot_kd233(self):
         self._port.dtr = False
         self._port.rts = False
         time.sleep(0.01)
@@ -502,6 +502,22 @@ class MAIXLoader:
         # Pull reset down and keep 10ms
         self._port.dtr = True
         self._port.rts = False
+        time.sleep(0.01)
+        #print('-- RESET to HIGH, BOOT --')
+        # Pull IO16 to low and release reset
+        self._port.rts = False
+        self._port.dtr = False
+        time.sleep(0.01)
+    
+
+    def reset_to_boot_dan(self):
+        self._port.dtr = False
+        self._port.rts = False
+        time.sleep(0.01)
+        #print('-- RESET to LOW --')
+        # Pull reset down and keep 10ms
+        self._port.dtr = False
+        self._port.rts = True
         time.sleep(0.01)
         #print('-- RESET to HIGH, BOOT --')
         # Pull IO16 to low and release reset
@@ -716,6 +732,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish", default=False, action="store_true")
+    parser.add_argument("-B", "--Board", type=str, help="Select dev board, dan or kd233, default dan", default="dan")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -744,21 +761,25 @@ if __name__ == '__main__':
         if retry_count > 15:
             print("\n" + ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
             sys.exit(1)
-        try:
-            print('.', end='')
-            loader.reset_to_isp_dan()
-            loader.greeting()
-            break
-        except TimeoutError:
-            pass
-
-        try:
-            print('_', end='')
-            loader.reset_to_isp_kd233()
-            loader.greeting()
-            break
-        except TimeoutError:
-            pass
+        if args.Board == "dan":
+            try:
+                print('.', end='')
+                loader.reset_to_isp_dan()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+        elif args.Board == "kd233":
+            try:
+                print('_', end='')
+                loader.reset_to_isp_kd233()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+        else:
+            print(ERROR_MSG,"Board unknown!!")
+            sys.exit(1)
     timeout = 3
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
@@ -819,7 +840,10 @@ if __name__ == '__main__':
             loader.flash_firmware(firmware_bin.read())
 
     # 3. boot
-    loader.reset_to_boot()
+    if args.Board == "dan":
+        loader.reset_to_boot_dan()
+    else:
+        loader.reset_to_boot_kd233()
     print(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
     loader._port.close()
 
