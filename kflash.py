@@ -629,7 +629,7 @@ class MAIXLoader:
 
                 if self.recv_debug():
                     break
-            printProgressBar(n+1, total_chunk, prefix = 'Downloading ISP:', suffix = 'Complete', length = 50)
+            printProgressBar(n+1, total_chunk, prefix = 'Downloading ISP:', suffix = '', length = 50)
 
     def dump_to_flash(self, data, address=0):
         '''
@@ -719,7 +719,7 @@ class MAIXLoader:
             # 3.1 刷入一个dataframe
             #print('[INFO]', 'Write firmware data piece')
             self.dump_to_flash(chunk, address= n * 4096 + address_offset)
-            printProgressBar(n+1, total_chunk, prefix = 'Downloading:', suffix = 'Complete', length = 50)
+            printProgressBar(n+1, total_chunk, prefix = 'Downloading:', suffix = '', length = 50)
 
 
 if __name__ == '__main__':
