@@ -1,5 +1,30 @@
 # kflash, A Python-based Kendryte K210 UART ISP Utility
 
+## Usage
+```bash
+usage: kflash.py [-h] [-p PORT] [-c CHIP] [-b BAUDRATE] [-l BOOTLOADER]
+                 [-k KEY] [-v] [-t] [-B BOARD] [-n]
+                 firmware
+
+positional arguments:
+  firmware              firmware bin path
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  COM Port
+  -c CHIP, --chip CHIP  SPI Flash type, 1 for in-chip, 0 for on-board
+  -b BAUDRATE, --baudrate BAUDRATE
+                        UART baudrate for uploading firmware
+  -l BOOTLOADER, --bootloader BOOTLOADER
+                        bootloader bin path
+  -k KEY, --key KEY     AES key in hex, if you need encrypt your firmware.
+  -v, --verbose         increase output verbosity
+  -t, --terminal        Start a terminal after finish (Python miniterm)
+  -B BOARD, --Board BOARD
+                        Select dev board, dan or kd233, default dan
+  -n, --noansi          Do not use ANSI colors, recommended in Windows CMD
+```
+
 ## Sample Usage
 ```bash
 # Linux or macOS
@@ -9,6 +34,7 @@ python3 kflash.py -t firmware.bin # Open a Serial Terminal After Finish
 # Windows CMD or PowerShell
 python kflash.py firmware.bin
 python kflash.py -t firmware.bin # Open a Serial Terminal After Finish
+python kflash.py -n -t firmware.bin # Open a Serial Terminal After Finish, do not use ANSI colors
 
 # Windows Subsystem for Linux
 sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
@@ -62,7 +88,7 @@ sudo ln -s /bin/pip3.6 /usr/bin/pip3
 sudo pip3 install pyserial
 ```
 
-## Trouble Shooting
+## Troubleshooting
  --------
 ## Could not open port /dev/tty*: [Errno 13] Permission denied: '/dev/tty*'
 > For Windows Subsystem for Linux, you may have to use sudo due to its docker like feature 
@@ -98,7 +124,7 @@ $ ls /dev/ttyUSB*
 /dev/ttyUSB2
 /dev/ttyUSB13
 ```
- - Choose the one you think belongs to your device, or you may try multimule names.
+ - Choose the one you think belongs to your device, or you may try multiple names.
 ```bash
 python3 kflash.py -p /dev/ttyUSB13 firmware.bin
 ```
@@ -115,10 +141,10 @@ $ ls /dev/ttyUSB*
 /dev/cu.wchusbserial1437
 /dev/cu.SLAB_USBtoUART2333
 ```
- - Choose the one you think belongs to your device, or you may try multimule names.
+ - Choose the one you think belongs to your device, or you may try multiple names.
 ```bash
 python3 kflash.py -p /dev/cu.wchusbserial1410 firmware.bin
 ```
-#### You may unable to find the device even in the /dev, check the link below for drivers.
+#### You may be unable to find the device even in the /dev, check the link below for drivers.
  - For K210 and Sipeed Dan -> [WCH CH34x USB2UART Chip](https://github.com/adrianmihalko/ch340g-ch34g-ch34x-mac-os-x-driver)
 ____________
