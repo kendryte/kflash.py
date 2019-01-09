@@ -15,6 +15,7 @@ optional arguments:
   -c CHIP, --chip CHIP  SPI Flash type, 1 for in-chip, 0 for on-board
   -b BAUDRATE, --baudrate BAUDRATE
                         UART baudrate for uploading firmware
+  -i, --isp             choose which built-in ISP_PROG
   -l BOOTLOADER, --bootloader BOOTLOADER
                         bootloader bin path
   -k KEY, --key KEY     AES key in hex, if you need encrypt your firmware.
