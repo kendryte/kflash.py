@@ -465,18 +465,18 @@ class MAIXLoader:
         return data
 
     def reset_to_isp_kd233(self):
-        self._port.dtr = False
-        self._port.rts = False
+        self._port.setDTR (False)
+        self._port.setRTS (False)
         time.sleep(0.01)
         #print('-- RESET to LOW, IO16 to HIGH --')
         # Pull reset down and keep 10ms
-        self._port.dtr = True
-        self._port.rts = False
+        self._port.setDTR (True)
+        self._port.setRTS (False)
         time.sleep(0.01)
         #print('-- IO16 to LOW, RESET to HIGH --')
         # Pull IO16 to low and release reset
-        self._port.rts = True
-        self._port.dtr = False
+        self._port.setRTS (True)
+        self._port.setDTR (False)
         time.sleep(0.01)
 
     def reset_to_isp_dan(self):
@@ -495,18 +495,18 @@ class MAIXLoader:
         time.sleep(0.01)
 
     def reset_to_boot(self):
-        self._port.dtr = False
-        self._port.rts = False
+        self._port.setDTR (False)
+        self._port.setRTS (False)
         time.sleep(0.01)
         #print('-- RESET to LOW --')
         # Pull reset down and keep 10ms
-        self._port.dtr = True
-        self._port.rts = False
+        self._port.setRTS (False)
+        self._port.setDTR (True)
         time.sleep(0.01)
         #print('-- RESET to HIGH, BOOT --')
         # Pull IO16 to low and release reset
-        self._port.rts = False
-        self._port.dtr = False
+        self._port.setRTS (False)
+        self._port.setDTR (False)
         time.sleep(0.01)
 
     def greeting(self):
