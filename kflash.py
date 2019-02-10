@@ -15,7 +15,7 @@ import re
 import os
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
-                    DEFAULT='\033[39', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
+                    DEFAULT='\033[39m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
                     BG_DEFAULT='\033[49m', BG_WHITE='\033[107m')
 
 ERROR_MSG   = BASH_TIPS['RED']+BASH_TIPS['BOLD']+'[ERROR]'+BASH_TIPS['NORMAL']
