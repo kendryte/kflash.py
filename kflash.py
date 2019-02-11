@@ -15,7 +15,7 @@ import re
 import os
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
-                    DEFAULT='\033[39', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
+                    DEFAULT='\033[39m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
                     BG_DEFAULT='\033[49m', BG_WHITE='\033[107m')
 
 ERROR_MSG   = BASH_TIPS['RED']+BASH_TIPS['BOLD']+'[ERROR]'+BASH_TIPS['NORMAL']
@@ -709,7 +709,7 @@ class MAIXLoader:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
-    parser.add_argument("-c", "--chip", help="SPI Flash type, 1 for in-chip, 0 for on-board", default=1)
+    parser.add_argument("-c", "--chip", help="SPI Flash type, 0 for in-chip, 1 for on-board", default=1)
     parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
     parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
     parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
