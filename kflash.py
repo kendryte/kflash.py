@@ -22,8 +22,8 @@ ERROR_MSG   = BASH_TIPS['RED']+BASH_TIPS['BOLD']+'[ERROR]'+BASH_TIPS['NORMAL']
 WARN_MSG    = BASH_TIPS['YELLOW']+BASH_TIPS['BOLD']+'[WARN]'+BASH_TIPS['NORMAL']
 INFO_MSG    = BASH_TIPS['GREEN']+BASH_TIPS['BOLD']+'[INFO]'+BASH_TIPS['NORMAL']
 
-VID_LIST_FOR_AUTO_LOOKUP = "(1A86)|(0403)|(067B)|(10C4)"
-#                            WCH    FTDI    PL     CL
+VID_LIST_FOR_AUTO_LOOKUP = "(1A86)|(0403)|(067B)|(10C4)|(C251)|(0403)"
+#                            WCH    FTDI    PL     CL    DAP   OPENEC
 timeout = 0.5
 
 MAX_RETRY_TIMES = 10
@@ -472,6 +472,7 @@ class MAIXLoader:
         #sys.stdout.write('\n')
         return data
 
+    # kd233
     def reset_to_isp_kd233(self):
         self._port.dtr = False
         self._port.rts = False
@@ -486,22 +487,6 @@ class MAIXLoader:
         self._port.rts = True
         self._port.dtr = False
         time.sleep(0.1)
-
-    def reset_to_isp_dan(self):
-        self._port.dtr = False
-        self._port.rts = False
-        time.sleep(0.1)
-        #print('-- RESET to LOW, IO16 to HIGH --')
-        # Pull reset down and keep 10ms
-        self._port.dtr = False
-        self._port.rts = True
-        time.sleep(0.1)
-        #print('-- IO16 to LOW, RESET to HIGH --')
-        # Pull IO16 to low and release reset
-        self._port.rts = False
-        self._port.dtr = True
-        time.sleep(0.1)
-
     def reset_to_boot_kd233(self):
         self._port.dtr = False
         self._port.rts = False
@@ -516,8 +501,22 @@ class MAIXLoader:
         self._port.rts = False
         self._port.dtr = False
         time.sleep(0.1)
-    
 
+    #dan dock
+    def reset_to_isp_dan(self):
+        self._port.dtr = False
+        self._port.rts = False
+        time.sleep(0.1)
+        #print('-- RESET to LOW, IO16 to HIGH --')
+        # Pull reset down and keep 10ms
+        self._port.dtr = False
+        self._port.rts = True
+        time.sleep(0.1)
+        #print('-- IO16 to LOW, RESET to HIGH --')
+        # Pull IO16 to low and release reset
+        self._port.rts = False
+        self._port.dtr = True
+        time.sleep(0.1)
     def reset_to_boot_dan(self):
         self._port.dtr = False
         self._port.rts = False
@@ -532,6 +531,22 @@ class MAIXLoader:
         self._port.rts = False
         self._port.dtr = False
         time.sleep(0.1)
+
+    # maix go for openec or new cmsis-dap firmware
+    def reset_to_boot_maixgo(self):
+        self._port.setDTR (False)
+        self._port.setRTS (False)
+        time.sleep(0.01)
+        #print('-- RESET to LOW --')
+        # Pull reset down and keep 10ms
+        self._port.setRTS (False)
+        self._port.setDTR (True)
+        time.sleep(0.01)
+        #print('-- RESET to HIGH, BOOT --')
+        # Pull IO16 to low and release reset
+        self._port.setRTS (False)
+        self._port.setDTR (False)
+        time.sleep(0.01)
 
     def greeting(self):
         self._port.write(b'\xc0\xc2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0')
@@ -741,7 +756,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
-    parser.add_argument("-B", "--Board", type=str, help="Select dev board, dan or kd233, default dan", default="dan")
+    parser.add_argument("-B", "--Board", type=str, help="Select dev board, dan or kd233 or maixgo, default dan", default="dan")
     parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
 
     parser.add_argument("firmware", help="firmware bin path")
@@ -793,6 +808,14 @@ if __name__ == '__main__':
         elif args.Board == "kd233":
             try:
                 print('_', end='')
+                loader.reset_to_isp_kd233()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+        elif args.Board == "maixgo":
+            try:
+                print('*', end='')
                 loader.reset_to_isp_kd233()
                 loader.greeting()
                 break
@@ -868,8 +891,13 @@ if __name__ == '__main__':
     # 3. boot
     if args.Board == "dan":
         loader.reset_to_boot_dan()
-    else:
+    elif args.Board == "kd233":
         loader.reset_to_boot_kd233()
+    elif args.Board == "maixgo":
+        loader.reset_to_boot_maixgo()
+    else:
+        print(ERROR_MSG,"Board unknown !! please press reset to boot!!")
+
     print(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
     loader._port.close()
 
