@@ -534,8 +534,8 @@ class MAIXLoader:
 
     # maix go for old cmsis-dap firmware
     def reset_to_isp_goD(self):
-        self._port.setDTR (False)
-        self._port.setRTS (False)
+        self._port.setDTR (True)   ## output 0
+        self._port.setRTS (True)
         time.sleep(0.01)
         #print('-- RESET to LOW --')
         # Pull reset down and keep 10ms
