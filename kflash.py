@@ -803,17 +803,21 @@ if __name__ == '__main__':
         print(INFO_MSG,'ANSI colors not used',BASH_TIPS['DEFAULT'])
 
     if args.port == "DEFAULT":
-        try:
-            if args.Board == "goE":
-                list_port_info = list(serial.tools.list_ports.grep("0403")) #Take the second one
-                print(INFO_MSG,"COM Port Auto Detected, Selected ",list_port_info[1].device,BASH_TIPS['DEFAULT'])
-                _port = list_port_info[1].device
-            else:
-                list_port_info = list(serial.tools.list_ports.grep(VID_LIST_FOR_AUTO_LOOKUP)) #Take the first one within the list
-                _port = list_port_info[0].device
-        except StopIteration:
-            print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
-            sys.exit(1)
+        if args.Board == "goE":
+            list_port_info = list(serial.tools.list_ports.grep("0403")) #Take the second one
+            if(len(list_port_info)==0):
+                print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
+                sys.exit(1)
+            list_port_info.sort()
+            print(INFO_MSG,"COM Port Auto Detected, Selected ",list_port_info[1].device,BASH_TIPS['DEFAULT'])
+            _port = list_port_info[1].device
+        else:
+            try:
+                list_port_info = next(serial.tools.list_ports.grep(VID_LIST_FOR_AUTO_LOOKUP)) #Take the first one within the list
+                _port = list_port_info.device
+            except StopIteration:
+                print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
+                sys.exit(1)
     else:
         _port = args.port
         print(INFO_MSG,"COM Port Selected Manually: ",_port,BASH_TIPS['DEFAULT'])
