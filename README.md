@@ -22,9 +22,17 @@ optional arguments:
   -v, --verbose         increase output verbosity
   -t, --terminal        Start a terminal after finish (Python miniterm)
   -B BOARD, --Board BOARD
-                        Select dev board, dan or kd233, default dan
+                        Select dev board, dan or kd233 or goD or goE, default dan
   -n, --noansi          Do not use ANSI colors, recommended in Windows CMD
 ```
+
+## Attention
+
+Maixgo with openec firmware, BOARD must choose `-B goE`, and should choose sencond com port.
+
+with cmsis-dap firmware(before 2019.02.21), BOARD must use `-B goE`. 
+
+you can update [new cmsis-dap firmware](http://blog.sipeed.com/p/352.html) ,it is same as openec.
 
 ## Sample Usage
 ```bash

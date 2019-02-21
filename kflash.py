@@ -472,7 +472,7 @@ class MAIXLoader:
         #sys.stdout.write('\n')
         return data
 
-    # kd233
+    # kd233 or open-ec or new cmsis-dap
     def reset_to_isp_kd233(self):
         self._port.dtr = False
         self._port.rts = False
@@ -532,7 +532,37 @@ class MAIXLoader:
         self._port.dtr = False
         time.sleep(0.1)
 
-    # maix go for openec or new cmsis-dap firmware
+    # maix go for old cmsis-dap firmware
+    def reset_to_isp_goD(self):
+        self._port.setDTR (False)
+        self._port.setRTS (False)
+        time.sleep(0.01)
+        #print('-- RESET to LOW --')
+        # Pull reset down and keep 10ms
+        self._port.setRTS (False)
+        self._port.setDTR (True)
+        time.sleep(0.01)
+        #print('-- RESET to HIGH, BOOT --')
+        # Pull IO16 to low and release reset
+        self._port.setRTS (False)
+        self._port.setDTR (True)
+        time.sleep(0.01)
+    def reset_to_boot_goD(self):
+        self._port.setDTR (False)
+        self._port.setRTS (False)
+        time.sleep(0.01)
+        #print('-- RESET to LOW --')
+        # Pull reset down and keep 10ms
+        self._port.setRTS (False)
+        self._port.setDTR (True)
+        time.sleep(0.01)
+        #print('-- RESET to HIGH, BOOT --')
+        # Pull IO16 to low and release reset
+        self._port.setRTS (True)
+        self._port.setDTR (True)
+        time.sleep(0.01)
+
+    # maix go for openec or new cmsis-dap  firmware
     def reset_to_boot_maixgo(self):
         self._port.setDTR (False)
         self._port.setRTS (False)
@@ -756,7 +786,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
-    parser.add_argument("-B", "--Board", type=str, help="Select dev board, dan or kd233 or maixgo, default dan", default="dan")
+    parser.add_argument("-B", "--Board", type=str, help="Select dev board, dan or kd233 or goD or goE, default dan", default="dan")
     parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
 
     parser.add_argument("firmware", help="firmware bin path")
@@ -813,10 +843,18 @@ if __name__ == '__main__':
                 break
             except TimeoutError:
                 pass
-        elif args.Board == "maixgo":
+        elif args.Board == "goE":
             try:
                 print('*', end='')
                 loader.reset_to_isp_kd233()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+        elif args.Board == "goD":
+            try:
+                print('#', end='')
+                loader.reset_to_isp_goD()
                 loader.greeting()
                 break
             except TimeoutError:
@@ -893,8 +931,10 @@ if __name__ == '__main__':
         loader.reset_to_boot_dan()
     elif args.Board == "kd233":
         loader.reset_to_boot_kd233()
-    elif args.Board == "maixgo":
+    elif args.Board == "goE":
         loader.reset_to_boot_maixgo()
+    elif args.Board == "goD":
+        loader.reset_to_boot_goD()
     else:
         print(ERROR_MSG,"Board unknown !! please press reset to boot!!")
 
