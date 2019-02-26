@@ -15,7 +15,7 @@ import re
 import os
 
 BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
-                    DEFAULT='\033[39m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
+                    DEFAULT='\033[0m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
                     BG_DEFAULT='\033[49m', BG_WHITE='\033[107m')
 
 ERROR_MSG   = BASH_TIPS['RED']+BASH_TIPS['BOLD']+'[ERROR]'+BASH_TIPS['NORMAL']
@@ -431,7 +431,9 @@ class MAIXLoader:
         #sys.stdout.write('[RECV one return] raw data: ')
         while 1:
             if time.time() - timeout_init > timeout:
-                raise TimeoutError
+                print(ERROR_MSG,'Response timeout',BASH_TIPS['DEFAULT'])
+                sys.exit(1)
+                #raise TimeoutError
             c = self._port.read(1)
             #sys.stdout.write(binascii.hexlify(c).decode())
             sys.stdout.flush()
@@ -716,10 +718,21 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish", default=False, action="store_true")
+    parser.add_argument("-n", "--noansi", help="Do not use ANSI colors", default=False, action="store_true")
     parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
+
+    if (args.noansi == True):
+        BASH_TIPS = dict(NORMAL='',BOLD='',DIM='',UNDERLINE='',
+                            DEFAULT='', RED='', YELLOW='', GREEN='',
+                            BG_DEFAULT='', BG_WHITE='')
+        ERROR_MSG   = BASH_TIPS['RED']+BASH_TIPS['BOLD']+'[ERROR]'+BASH_TIPS['NORMAL']
+        WARN_MSG    = BASH_TIPS['YELLOW']+BASH_TIPS['BOLD']+'[WARN]'+BASH_TIPS['NORMAL']
+        INFO_MSG    = BASH_TIPS['GREEN']+BASH_TIPS['BOLD']+'[INFO]'+BASH_TIPS['NORMAL']
+        print(INFO_MSG,'ANSI colors not used',BASH_TIPS['DEFAULT'])
+                            
     if args.port == "DEFAULT":
         try:
             list_port_info = next(serial.tools.list_ports.grep(VID_LIST_FOR_AUTO_LOOKUP)) #Take the first one within the list
