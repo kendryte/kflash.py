@@ -716,6 +716,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish", default=False, action="store_true")
+    parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -770,12 +771,31 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # install bootloader at 0x80000000
-    if args.bootloader:
-        loader.install_flash_bootloader(open(args.bootloader, 'rb').read())
-    else:
-        loader.install_flash_bootloader(ISP_PROG)
+    isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
 
+    if args.sram:
+        if ".kfpkg" == os.path.splitext(args.firmware)[1]:
+            print(ERROR_MSG, "Unable to load kfpkg to SRAM")
+            sys.exit(1)
+        isp_loader = firmware_bin.read()
+    
+    loader.install_flash_bootloader(isp_loader)
     loader.boot()
+
+    if args.sram:
+        if(args.terminal == True):
+            import serial.tools.miniterm
+            _miniterm = serial.tools.miniterm.Miniterm(loader._port)
+            _miniterm.set_rx_encoding('UTF-8')
+            _miniterm.set_tx_encoding('UTF-8')
+            _miniterm.start()
+            try:
+                _miniterm.join(True)
+            except KeyboardInterrupt:
+                pass
+            _miniterm.join()
+            _miniterm.close()
+            sys.exit(0)
 
     print(INFO_MSG,"Wait For 0.3 second for ISP to Boot", BASH_TIPS['DEFAULT'])
 
