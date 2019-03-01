@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import sys
 import time
 import zlib
@@ -732,7 +733,7 @@ if __name__ == '__main__':
         WARN_MSG    = BASH_TIPS['YELLOW']+BASH_TIPS['BOLD']+'[WARN]'+BASH_TIPS['NORMAL']
         INFO_MSG    = BASH_TIPS['GREEN']+BASH_TIPS['BOLD']+'[INFO]'+BASH_TIPS['NORMAL']
         print(INFO_MSG,'ANSI colors not used',BASH_TIPS['DEFAULT'])
-                            
+
     if args.port == "DEFAULT":
         try:
             list_port_info = next(serial.tools.list_ports.grep(VID_LIST_FOR_AUTO_LOOKUP)) #Take the first one within the list
@@ -747,6 +748,22 @@ if __name__ == '__main__':
 
     loader = MAIXLoader(port=_port, baudrate=115200)
 
+    # 0. Check firmware
+    try:
+        firmware_bin = open(args.firmware, 'rb')
+    except FileNotFoundError:
+        print(ERROR_MSG,'Unable to find the firmware at ', args.firmware, BASH_TIPS['DEFAULT'])
+        sys.exit(1)
+
+    with open(args.firmware, 'rb') as f:
+        file_header = f.read(4)
+        if file_header.startswith(bytes([0x50, 0x4B])):
+            if ".kfpkg" != os.path.splitext(args.firmware)[1]:
+                print(INFO_MSG, 'Find a zip file, but not with ext .kfpkg:', args.firmware, BASH_TIPS['DEFAULT'])
+        if file_header.startswith(bytes([0x7F, 0x45, 0x4C, 0x46])):
+            print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
+            print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
+            sys.exit(1)
 
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
@@ -777,11 +794,6 @@ if __name__ == '__main__':
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
     # 2. flash bootloader and firmware
-    try:
-        firmware_bin = open(args.firmware, 'rb')
-    except FileNotFoundError:
-        print(ERROR_MSG,'Unable to find the firmware at ', args.firmware, BASH_TIPS['DEFAULT'])
-        sys.exit(1)
 
     # install bootloader at 0x80000000
     isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
@@ -791,7 +803,7 @@ if __name__ == '__main__':
             print(ERROR_MSG, "Unable to load kfpkg to SRAM")
             sys.exit(1)
         isp_loader = firmware_bin.read()
-    
+
     loader.install_flash_bootloader(isp_loader)
     loader.boot()
 
