@@ -16,7 +16,7 @@ sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13
 sudo python3 kflash.py -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
 ```
 
-## Requirments
+## Requirements
 
 - Python3
 - PySerial
