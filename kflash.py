@@ -786,7 +786,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
                         action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
-    parser.add_argument("-B", "--Board", type=str, help="Select dev board, dan or kd233 or goD or goE, default dan", default="dan")
+    parser.add_argument("-B", "--Board",required=True, type=str, help="Select dev board, dan or kd233 or goD or goE, default dan", default="dan")
     parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
 
     parser.add_argument("firmware", help="firmware bin path")
