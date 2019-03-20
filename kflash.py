@@ -262,7 +262,7 @@ ISP_PROG2 = binascii.unhexlify(ISP_PROG2)
 ISP_PROG2 = zlib.decompress(ISP_PROG2)
 #print('ISP_FLASH progam size (decompressed)', len(ISP_PROG))
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '='):
     """
     Call in a loop to create terminal progress bar
     @params:
