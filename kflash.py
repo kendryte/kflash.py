@@ -433,8 +433,7 @@ class MAIXLoader:
         while 1:
             if time.time() - timeout_init > timeout:
                 print(ERROR_MSG,'Response timeout',BASH_TIPS['DEFAULT'])
-                sys.exit(1)
-                #raise TimeoutError
+                raise TimeoutError
             c = self._port.read(1)
             #sys.stdout.write(binascii.hexlify(c).decode())
             sys.stdout.flush()
