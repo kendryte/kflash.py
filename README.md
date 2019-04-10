@@ -1,19 +1,54 @@
 # kflash, A Python-based Kendryte K210 UART ISP Utility
 
+## Usage
+```bash
+usage: kflash.py [-h] [-p PORT] [-c CHIP] [-b BAUDRATE] [-l BOOTLOADER]
+                 [-k KEY] [-v] [-t] [-n] [-s] -B BOARD
+                 firmware
+
+positional arguments:
+  firmware              firmware bin path
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PORT, --port PORT  COM Port
+  -c CHIP, --chip CHIP  SPI Flash type, 0 for in-chip, 1 for on-board
+  -b BAUDRATE, --baudrate BAUDRATE
+                        UART baudrate for uploading firmware
+  -l BOOTLOADER, --bootloader BOOTLOADER
+                        bootloader bin path
+  -k KEY, --key KEY     AES key in hex, if you need encrypt your firmware.
+  -v, --verbose         increase output verbosity
+  -t, --terminal        Start a terminal after finish (Python miniterm)
+  -n, --noansi          Do not use ANSI colors, recommended in Windows CMD
+  -s, --sram            Download firmware to SRAM and boot
+  -B BOARD, --Board BOARD
+                        Select dev board, kd233 or dan or bit or goD or goE
+```
+
+## Attention
+
+Maixgo with openec firmware, BOARD must choose `-B goE`, and should choose sencond com port.
+
+with cmsis-dap firmware(before 2019.02.21), BOARD must use `-B goD`. 
+
+you can update [new cmsis-dap firmware](http://blog.sipeed.com/p/352.html) ,it is same as openec.
+
 ## Sample Usage
 
 ```bash
 # Linux or macOS
-python3 kflash.py firmware.bin
-python3 kflash.py -t firmware.bin # Open a Serial Terminal After Finish
+python3 kflash.py -B dan firmware.bin
+python3 kflash.py -B dan -t firmware.bin # Open a Serial Terminal After Finish
 
 # Windows CMD or PowerShell
-python kflash.py firmware.bin
-python kflash.py -t firmware.bin # Open a Serial Terminal After Finish
+python kflash.py -B dan firmware.bin
+python kflash.py -B dan -t firmware.bin # Open a Serial Terminal After Finish
+python kflash.py -B dan -n -t firmware.bin # Open a Serial Terminal After Finish, do not use ANSI colors
 
 # Windows Subsystem for Linux
-sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
-sudo python3 kflash.py -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
+sudo python3 kflash.py -B dan -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
+sudo python3 kflash.py -B dan -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
 ```
 
 ## Requirements
