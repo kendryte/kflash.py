@@ -34,7 +34,7 @@ With cmsis-dap firmware(before 2019.02.21), BOARD must use `-B goD`.
 
 You can update [new cmsis-dap firmware](http://blog.sipeed.com/p/352.html), it is same as openec.
 
-For K210 Trainer V0.01b, BOARD must choose `-B dan`.
+For K210 Trainer V0.01b, BOARD must choose `-B trainer`.
 
 For KD233, BOARD must choose `-B kd233`, and the jumper for kd233 automatic download circuit must be set.
 
