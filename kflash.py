@@ -840,7 +840,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
     parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
 
-    parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, kd233 or dan or bit or goD or goE")
+    parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goD, goE or trainer")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -861,18 +861,27 @@ if __name__ == '__main__':
                 print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                 sys.exit(1)
             list_port_info.sort()
-            print(INFO_MSG,"COM Port Auto Detected, Selected ",list_port_info[1].device,BASH_TIPS['DEFAULT'])
             _port = list_port_info[1].device
+            print(INFO_MSG,"COM Port Auto Detected, Selected ", _port, BASH_TIPS['DEFAULT'])
+        elif args.Board == "trainer":
+            list_port_info = list(serial.tools.list_ports.grep("0403")) #Take the first one
+            if(len(list_port_info)==0):
+                print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
+                sys.exit(1)
+            list_port_info.sort()
+            _port = list_port_info[0].device
+            print(INFO_MSG,"COM Port Auto Detected, Selected ", _port, BASH_TIPS['DEFAULT'])
         else:
             try:
                 list_port_info = next(serial.tools.list_ports.grep(VID_LIST_FOR_AUTO_LOOKUP)) #Take the first one within the list
                 _port = list_port_info.device
+                print(INFO_MSG,"COM Port Auto Detected, Selected ", _port, BASH_TIPS['DEFAULT'])
             except StopIteration:
                 print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                 sys.exit(1)
     else:
         _port = args.port
-        print(INFO_MSG,"COM Port Selected Manually: ",_port,BASH_TIPS['DEFAULT'])
+        print(INFO_MSG,"COM Port Selected Manually: ", _port, BASH_TIPS['DEFAULT'])
 
     loader = MAIXLoader(port=_port, baudrate=115200)
 
@@ -903,7 +912,7 @@ if __name__ == '__main__':
         if retry_count > 15:
             print("\n" + ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
             sys.exit(1)
-        if args.Board == "dan" or args.Board == "bit":
+        if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
             try:
                 print('.', end='')
                 loader.reset_to_isp_dan()
