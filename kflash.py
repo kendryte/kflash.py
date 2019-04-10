@@ -428,7 +428,8 @@ class MAIXLoader:
         #sys.stdout.write('[RECV one return] raw data: ')
         while 1:
             if time.time() - timeout_init > timeout:
-                print(ERROR_MSG,'Response timeout',BASH_TIPS['DEFAULT'])
+                # print()
+                # print(ERROR_MSG,'Response timeout',BASH_TIPS['DEFAULT'])
                 raise TimeoutError
             c = self._port.read(1)
             #sys.stdout.write(binascii.hexlify(c).decode())
@@ -839,7 +840,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
     parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
 
-    parser.add_argument("-B", "--Board",required=True, type=str, help="Select dev board, kd233 or dan or bit or goD or goE")
+    parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, kd233 or dan or bit or goD or goE")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -935,8 +936,34 @@ if __name__ == '__main__':
             except TimeoutError:
                 pass
         else:
-            print(ERROR_MSG,"Board unknown!!")
-            sys.exit(1)
+            try:
+                print('.', end='')
+                loader.reset_to_isp_dan()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+            try:
+                print('_', end='')
+                loader.reset_to_isp_kd233()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+            try:
+                print('.', end='')
+                loader.reset_to_isp_goD()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
+            try:
+                print('_', end='')
+                loader.reset_to_isp_kd233()
+                loader.greeting()
+                break
+            except TimeoutError:
+                pass
     timeout = 3
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
