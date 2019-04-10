@@ -411,7 +411,7 @@ class MAIXLoader:
         return self._port.write(buf)
 
     def read_loop(self):
-        out = b''
+        #out = b''
         # while self._port.inWaiting() > 0:
         #     out += self._port.read(1)
 
@@ -453,7 +453,7 @@ class MAIXLoader:
                 elif c == b'\xdd':
                     data += b'\xdb'
                 else:
-                    raise Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', b))
+                    raise Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', c))
             elif c == b'\xdb':  # start of escape sequence
                 in_escape = True
 
@@ -464,62 +464,62 @@ class MAIXLoader:
 
     # kd233 or open-ec or new cmsis-dap
     def reset_to_isp_kd233(self):
-        self._port.dtr = False
-        self._port.rts = False
+        self._port.setDTR (False)
+        self._port.setRTS (False)
         time.sleep(0.1)
         #print('-- RESET to LOW, IO16 to HIGH --')
         # Pull reset down and keep 10ms
-        self._port.dtr = True
-        self._port.rts = False
+        self._port.setDTR (True)
+        self._port.setRTS (False)
         time.sleep(0.1)
         #print('-- IO16 to LOW, RESET to HIGH --')
         # Pull IO16 to low and release reset
-        self._port.rts = True
-        self._port.dtr = False
+        self._port.setRTS (True)
+        self._port.setDTR (False)
         time.sleep(0.1)
     def reset_to_boot_kd233(self):
-        self._port.dtr = False
-        self._port.rts = False
+        self._port.setDTR (False)
+        self._port.setRTS (False)
         time.sleep(0.1)
         #print('-- RESET to LOW --')
         # Pull reset down and keep 10ms
-        self._port.dtr = True
-        self._port.rts = False
+        self._port.setDTR (True)
+        self._port.setRTS (False)
         time.sleep(0.1)
         #print('-- RESET to HIGH, BOOT --')
         # Pull IO16 to low and release reset
-        self._port.rts = False
-        self._port.dtr = False
+        self._port.setRTS (False)
+        self._port.setDTR (False)
         time.sleep(0.1)
 
     #dan dock
     def reset_to_isp_dan(self):
-        self._port.dtr = False
-        self._port.rts = False
+        self._port.setDTR (False)
+        self._port.setRTS (False)
         time.sleep(0.1)
         #print('-- RESET to LOW, IO16 to HIGH --')
         # Pull reset down and keep 10ms
-        self._port.dtr = False
-        self._port.rts = True
+        self._port.setDTR (False)
+        self._port.setRTS (True)
         time.sleep(0.1)
         #print('-- IO16 to LOW, RESET to HIGH --')
         # Pull IO16 to low and release reset
-        self._port.rts = False
-        self._port.dtr = True
+        self._port.setRTS (False)
+        self._port.setDTR (True)
         time.sleep(0.1)
     def reset_to_boot_dan(self):
-        self._port.dtr = False
-        self._port.rts = False
+        self._port.setDTR (False)
+        self._port.setRTS (False)
         time.sleep(0.1)
         #print('-- RESET to LOW --')
         # Pull reset down and keep 10ms
-        self._port.dtr = False
-        self._port.rts = True
+        self._port.setDTR (False)
+        self._port.setRTS (True)
         time.sleep(0.1)
         #print('-- RESET to HIGH, BOOT --')
         # Pull IO16 to low and release reset
-        self._port.rts = False
-        self._port.dtr = False
+        self._port.setRTS (False)
+        self._port.setDTR (False)
         time.sleep(0.1)
 
     # maix go for old cmsis-dap firmware
