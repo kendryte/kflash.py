@@ -832,15 +832,14 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
     parser.add_argument("-c", "--chip", help="SPI Flash type, 0 for in-chip, 1 for on-board", default=1)
     parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
-    parser.add_argument("-i", "--isp", type=int, help="built-in isp_prog", default=2)
     parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
     parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
-    parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False,
-                        action="store_true")
+    parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False, action="store_true")
     parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
-    parser.add_argument("-B", "--Board",required=True, type=str, help="Select dev board, dan or bit or kd233 or goD or goE, default dan", default="dan")
     parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
     parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
+
+    parser.add_argument("-B", "--Board",required=True, type=str, help="Select dev board, kd233 or dan or bit or goD or goE")
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -903,7 +902,7 @@ if __name__ == '__main__':
         if retry_count > 15:
             print("\n" + ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
             sys.exit(1)
-        if args.Board == "dan":
+        if args.Board == "dan" or args.Board == "bit":
             try:
                 print('.', end='')
                 loader.reset_to_isp_dan()
@@ -1014,7 +1013,7 @@ if __name__ == '__main__':
             loader.flash_firmware(firmware_bin.read())
 
     # 3. boot
-    if args.Board == "dan":
+    if args.Board == "dan" or args.Board == "bit":
         loader.reset_to_boot_dan()
     elif args.Board == "kd233":
         loader.reset_to_boot_kd233()

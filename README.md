@@ -2,8 +2,8 @@
 
 ## Usage
 ```bash
-usage: kflash.py [-h] [-p PORT] [-c CHIP] [-b BAUDRATE] [-i ISP]
-                 [-l BOOTLOADER] [-k KEY] [-v] [-t] -B BOARD [-n] [-s]
+usage: kflash.py [-h] [-p PORT] [-c CHIP] [-b BAUDRATE] [-l BOOTLOADER]
+                 [-k KEY] [-v] [-t] [-n] [-s] -B BOARD
                  firmware
 
 positional arguments:
@@ -15,17 +15,15 @@ optional arguments:
   -c CHIP, --chip CHIP  SPI Flash type, 0 for in-chip, 1 for on-board
   -b BAUDRATE, --baudrate BAUDRATE
                         UART baudrate for uploading firmware
-  -i ISP, --isp ISP     built-in isp_prog
   -l BOOTLOADER, --bootloader BOOTLOADER
                         bootloader bin path
   -k KEY, --key KEY     AES key in hex, if you need encrypt your firmware.
   -v, --verbose         increase output verbosity
   -t, --terminal        Start a terminal after finish (Python miniterm)
-  -B BOARD, --Board BOARD
-                        Select dev board, dan or bit or kd233 or goD or goE,
-                        default dan
   -n, --noansi          Do not use ANSI colors, recommended in Windows CMD
   -s, --sram            Download firmware to SRAM and boot
+  -B BOARD, --Board BOARD
+                        Select dev board, kd233 or dan or bit or goD or goE
 ```
 
 ## Attention
