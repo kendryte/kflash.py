@@ -30,9 +30,13 @@ optional arguments:
 
 Maixgo with openec firmware, BOARD must choose `-B goE`, and should choose sencond com port.
 
-with cmsis-dap firmware(before 2019.02.21), BOARD must use `-B goD`. 
+With cmsis-dap firmware(before 2019.02.21), BOARD must use `-B goD`. 
 
-you can update [new cmsis-dap firmware](http://blog.sipeed.com/p/352.html) ,it is same as openec.
+You can update [new cmsis-dap firmware](http://blog.sipeed.com/p/352.html), it is same as openec.
+
+For K210 Trainer V0.01b, BOARD must choose `-B goE`.
+
+For KD233, BOARD must choose `-B kd233`, and the jumper for kd233 automatic download circuit must be set.
 
 ## Sample Usage
 
