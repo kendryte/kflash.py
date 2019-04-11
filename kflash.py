@@ -31,6 +31,11 @@ MAX_RETRY_TIMES = 10
 
 class TimeoutError(Exception): pass
 
+class ProgramFileFormat(Enum):
+    FMT_BINARY = 0
+    FMT_ELF = 1
+    FMT_KFPKG = 2
+
 try:
     import serial
     import serial.tools.list_ports
@@ -785,6 +790,24 @@ class MAIXLoader:
         # 1. 刷入 flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
+    def load_elf_to_sram(self, f):
+        from elftools.elf.elffile import ELFFile
+        from elftools.elf.descriptions import describe_p_type
+
+        elffile = ELFFile(f)
+        if elffile['e_entry'] != 0x80000000:
+            print(WARN_MSG,"ELF entry is 0x%x instead of 0x80000000" % (elffile['e_entry']), BASH_TIPS['DEFAULT'])
+
+        for segment in elffile.iter_segments():
+            t = describe_p_type(segment['p_type'])
+            print(INFO_MSG, ("Program Header: Size: %d, Virtual Address: 0x%x, Type: %s" % (segment['p_filesz'], segment['p_vaddr'], t)), BASH_TIPS['DEFAULT'])
+            if not (segment['p_vaddr'] & 0x80000000):
+                continue
+            if segment['p_filesz']==0 or segment['p_vaddr']==0:
+                print("Skipped")
+                continue
+            self.flash_dataframe(segment.data(), segment['p_vaddr'])
+
     def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = True):
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
@@ -827,6 +850,16 @@ class MAIXLoader:
             if (time_delta > 1):
                 speed = str(int((n + 1) * 4096 / 1024.0 / time_delta)) + 'kiB/s'
             printProgressBar(n+1, total_chunk, prefix = 'Programming BIN:', suffix = speed, length = columns - 35)
+
+def open_terminal(reset):
+    control_signal = '0' if reset else '1'
+    control_signal_b = not reset
+    import serial.tools.miniterm
+    # For using the terminal with MaixPy the 'filter' option must be set to 'direct'
+    # because some control characters are emited
+    sys.argv = ['kflash.py', _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
+    serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
+    sys.exit(0)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -884,6 +917,7 @@ if __name__ == '__main__':
         print(INFO_MSG,"COM Port Selected Manually: ", _port, BASH_TIPS['DEFAULT'])
 
     loader = MAIXLoader(port=_port, baudrate=115200)
+    file_format = ProgramFileFormat.FMT_BINARY
 
     # 0. Check firmware
     try:
@@ -897,10 +931,17 @@ if __name__ == '__main__':
         if file_header.startswith(bytes([0x50, 0x4B])):
             if ".kfpkg" != os.path.splitext(args.firmware)[1]:
                 print(INFO_MSG, 'Find a zip file, but not with ext .kfpkg:', args.firmware, BASH_TIPS['DEFAULT'])
+            else:
+                file_format = ProgramFileFormat.FMT_KFPKG
+
         if file_header.startswith(bytes([0x7F, 0x45, 0x4C, 0x46])):
-            print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
-            print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
-            sys.exit(1)
+            file_format = ProgramFileFormat.FMT_ELF
+            if args.sram:
+                print(INFO_MSG, 'Find an ELF file:', args.firmware, BASH_TIPS['DEFAULT'])
+            else:
+                print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
+                print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
+                sys.exit(1)
 
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
@@ -978,32 +1019,23 @@ if __name__ == '__main__':
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
     # 2. flash bootloader and firmware
 
-    # install bootloader at 0x80000000
-    isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
-
     if args.sram:
-        if ".kfpkg" == os.path.splitext(args.firmware)[1]:
+        if file_format == ProgramFileFormat.FMT_KFPKG:
             print(ERROR_MSG, "Unable to load kfpkg to SRAM")
             sys.exit(1)
-        isp_loader = firmware_bin.read()
-
-    loader.install_flash_bootloader(isp_loader)
+        elif file_format == ProgramFileFormat.FMT_ELF:
+            loader.load_elf_to_sram(firmware_bin)
+        else:
+            loader.install_flash_bootloader(firmware_bin.read())
+    else:
+        # install bootloader at 0x80000000
+        isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
+        loader.install_flash_bootloader(isp_loader)
     loader.boot()
 
     if args.sram:
         if(args.terminal == True):
-            import serial.tools.miniterm
-            _miniterm = serial.tools.miniterm.Miniterm(loader._port)
-            _miniterm.set_rx_encoding('UTF-8')
-            _miniterm.set_tx_encoding('UTF-8')
-            _miniterm.start()
-            try:
-                _miniterm.join(True)
-            except KeyboardInterrupt:
-                pass
-            _miniterm.join()
-            _miniterm.close()
-            sys.exit(0)
+            open_terminal(False)
 
     print(INFO_MSG,"Wait For 0.1 second for ISP to Boot", BASH_TIPS['DEFAULT'])
 
@@ -1018,7 +1050,7 @@ if __name__ == '__main__':
 
     loader.init_flash(args.chip)
 
-    if ".kfpkg" == os.path.splitext(args.firmware)[1]:
+    if file_format == ProgramFileFormat.FMT_KFPKG:
         print(INFO_MSG,"Extracting KFPKG ... ", BASH_TIPS['DEFAULT'])
         firmware_bin.close()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1064,9 +1096,4 @@ if __name__ == '__main__':
     loader._port.close()
 
     if(args.terminal == True):
-        import serial.tools.miniterm
-        # For using the terminal with MaixPy the 'filter' option must be set to 'direct'
-        # because some control characters are emited
-        sys.argv = ['kflash.py', _port, '115200', '--dtr=0', '--rts=0',  '--filter=direct']
-        serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=False, default_rts=False)
-        sys.exit(0)
+        open_terminal(True)
