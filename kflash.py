@@ -790,6 +790,24 @@ class MAIXLoader:
         # 1. 刷入 flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
+    def load_elf_to_sram(self, f):
+        from elftools.elf.elffile import ELFFile
+        from elftools.elf.descriptions import describe_p_type
+
+        elffile = ELFFile(f)
+        if elffile['e_entry'] != 0x80000000:
+            print(WARN_MSG,"ELF entry is 0x%x instead of 0x80000000" % (elffile['e_entry']), BASH_TIPS['DEFAULT'])
+
+        for segment in elffile.iter_segments():
+            t = describe_p_type(segment['p_type'])
+            print(INFO_MSG, ("Program Header: Size: %d, Virtual Address: 0x%x, Type: %s" % (segment['p_filesz'], segment['p_vaddr'], t)), BASH_TIPS['DEFAULT'])
+            if not (segment['p_vaddr'] & 0x80000000):
+                continue
+            if segment['p_filesz']==0 or segment['p_vaddr']==0:
+                print("Skipped")
+                continue
+            self.flash_dataframe(segment.data(), segment['p_vaddr'])
+
     def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = True):
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
@@ -913,11 +931,15 @@ if __name__ == '__main__':
                 print(INFO_MSG, 'Find a zip file, but not with ext .kfpkg:', args.firmware, BASH_TIPS['DEFAULT'])
             else:
                 file_format = ProgramFileFormat.FMT_KFPKG
+
         if file_header.startswith(bytes([0x7F, 0x45, 0x4C, 0x46])):
-            print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
-            print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
-            sys.exit(1)
             file_format = ProgramFileFormat.FMT_ELF
+            if args.sram:
+                print(INFO_MSG, 'Find an ELF file:', args.firmware, BASH_TIPS['DEFAULT'])
+            else:
+                print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
+                print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
+                sys.exit(1)
 
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
@@ -995,16 +1017,18 @@ if __name__ == '__main__':
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
     # 2. flash bootloader and firmware
 
-    # install bootloader at 0x80000000
-    isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
-
     if args.sram:
         if file_format == ProgramFileFormat.FMT_KFPKG:
             print(ERROR_MSG, "Unable to load kfpkg to SRAM")
             sys.exit(1)
-        isp_loader = firmware_bin.read()
-
-    loader.install_flash_bootloader(isp_loader)
+        elif file_format == ProgramFileFormat.FMT_ELF:
+            loader.load_elf_to_sram(firmware_bin)
+        else:
+            loader.install_flash_bootloader(firmware_bin.read())
+    else:
+        # install bootloader at 0x80000000
+        isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
+        loader.install_flash_bootloader(isp_loader)
     loader.boot()
 
     if args.sram:
