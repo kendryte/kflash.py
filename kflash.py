@@ -851,14 +851,6 @@ class MAIXLoader:
                 speed = str(int((n + 1) * 4096 / 1024.0 / time_delta)) + 'kiB/s'
             printProgressBar(n+1, total_chunk, prefix = 'Programming BIN:', suffix = speed, length = columns - 35)
 
-def open_terminal():
-    import serial.tools.miniterm
-    # For using the terminal with MaixPy the 'filter' option must be set to 'direct'
-    # because some control characters are emited
-    sys.argv = ['kflash.py', _port, '115200', '--dtr=0', '--rts=0',  '--filter=direct']
-    serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=False, default_rts=False)
-    sys.exit(0)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
@@ -1033,7 +1025,18 @@ if __name__ == '__main__':
 
     if args.sram:
         if(args.terminal == True):
-            open_terminal()
+            import serial.tools.miniterm
+            _miniterm = serial.tools.miniterm.Miniterm(loader._port)
+            _miniterm.set_rx_encoding('UTF-8')
+            _miniterm.set_tx_encoding('UTF-8')
+            _miniterm.start()
+            try:
+                _miniterm.join(True)
+            except KeyboardInterrupt:
+                pass
+            _miniterm.join()
+            _miniterm.close()
+            sys.exit(0)
 
     print(INFO_MSG,"Wait For 0.1 second for ISP to Boot", BASH_TIPS['DEFAULT'])
 
@@ -1094,4 +1097,9 @@ if __name__ == '__main__':
     loader._port.close()
 
     if(args.terminal == True):
-        open_terminal()
+        import serial.tools.miniterm
+        # For using the terminal with MaixPy the 'filter' option must be set to 'direct'
+        # because some control characters are emited
+        sys.argv = ['kflash.py', _port, '115200', '--dtr=0', '--rts=0',  '--filter=direct']
+        serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=False, default_rts=False)
+        sys.exit(0)
