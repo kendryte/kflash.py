@@ -31,6 +31,11 @@ MAX_RETRY_TIMES = 10
 
 class TimeoutError(Exception): pass
 
+class ProgramFileFormat(Enum):
+    FMT_BINARY = 0
+    FMT_ELF = 1
+    FMT_KFPKG = 2
+
 try:
     import serial
     import serial.tools.list_ports
@@ -884,6 +889,7 @@ if __name__ == '__main__':
         print(INFO_MSG,"COM Port Selected Manually: ", _port, BASH_TIPS['DEFAULT'])
 
     loader = MAIXLoader(port=_port, baudrate=115200)
+    file_format = ProgramFileFormat.FMT_BINARY
 
     # 0. Check firmware
     try:
@@ -897,10 +903,13 @@ if __name__ == '__main__':
         if file_header.startswith(bytes([0x50, 0x4B])):
             if ".kfpkg" != os.path.splitext(args.firmware)[1]:
                 print(INFO_MSG, 'Find a zip file, but not with ext .kfpkg:', args.firmware, BASH_TIPS['DEFAULT'])
+            else:
+                file_format = ProgramFileFormat.FMT_KFPKG
         if file_header.startswith(bytes([0x7F, 0x45, 0x4C, 0x46])):
             print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
             print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
             sys.exit(1)
+            file_format = ProgramFileFormat.FMT_ELF
 
     # 1. Greeting.
     print(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
@@ -982,7 +991,7 @@ if __name__ == '__main__':
     isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
 
     if args.sram:
-        if ".kfpkg" == os.path.splitext(args.firmware)[1]:
+        if file_format == ProgramFileFormat.FMT_KFPKG:
             print(ERROR_MSG, "Unable to load kfpkg to SRAM")
             sys.exit(1)
         isp_loader = firmware_bin.read()
@@ -1018,7 +1027,7 @@ if __name__ == '__main__':
 
     loader.init_flash(args.chip)
 
-    if ".kfpkg" == os.path.splitext(args.firmware)[1]:
+    if file_format == ProgramFileFormat.FMT_KFPKG:
         print(INFO_MSG,"Extracting KFPKG ... ", BASH_TIPS['DEFAULT'])
         firmware_bin.close()
         with tempfile.TemporaryDirectory() as tmpdir:
