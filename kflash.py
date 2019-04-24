@@ -376,6 +376,17 @@ def chunks(l, n):
         yield l[i:i + n]
 
 
+def get_terminal_size(fallback=(100, 24)):
+    for i in range(0,3):
+        try:
+            columns, rows = os.get_terminal_size(i)
+        except OSError:
+            continue
+        break
+    else:  # set default if the loop completes which means all failed
+        columns, rows = fallback
+    return columns, rows
+
 class MAIXLoader:
     def change_baudrate(self, baudrate):
         print(INFO_MSG,"Selected Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
@@ -730,7 +741,7 @@ class MAIXLoader:
                 if self.recv_debug():
                     break
 
-            columns, lines = os.get_terminal_size()
+            columns, lines = get_terminal_size()
             time_delta = time.time() - time_start
             speed = ''
             if (time_delta > 1):
@@ -844,7 +855,7 @@ class MAIXLoader:
             # 3.1 刷入一个dataframe
             #print('[INFO]', 'Write firmware data piece')
             self.dump_to_flash(chunk, address= n * 4096 + address_offset)
-            columns, lines = os.get_terminal_size()
+            columns, lines = get_terminal_size()
             time_delta = time.time() - time_start
             speed = ''
             if (time_delta > 1):
