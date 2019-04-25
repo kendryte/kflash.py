@@ -1001,6 +1001,9 @@ if __name__ == '__main__':
                 print('.', end='')
                 loader.reset_to_isp_dan()
                 loader.greeting()
+                args.Board = "dan"
+                print()
+                print(INFO_MSG,"Automatically detected dan/bit/trainer",BASH_TIPS['DEFAULT'])
                 break
             except TimeoutError:
                 pass
@@ -1008,6 +1011,9 @@ if __name__ == '__main__':
                 print('_', end='')
                 loader.reset_to_isp_kd233()
                 loader.greeting()
+                args.Board = "kd233"
+                print()
+                print(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
                 break
             except TimeoutError:
                 pass
@@ -1015,13 +1021,20 @@ if __name__ == '__main__':
                 print('.', end='')
                 loader.reset_to_isp_goD()
                 loader.greeting()
+                args.Board = "goD"
+                print()
+                print(INFO_MSG,"Automatically detected goD",BASH_TIPS['DEFAULT'])
                 break
             except TimeoutError:
                 pass
             try:
+                # Magic, just repeat, don't remove, it may unstable, don't know why.
                 print('_', end='')
                 loader.reset_to_isp_kd233()
                 loader.greeting()
+                args.Board = "kd233"
+                print()
+                print(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
                 break
             except TimeoutError:
                 pass
@@ -1092,7 +1105,7 @@ if __name__ == '__main__':
             loader.flash_firmware(firmware_bin.read())
 
     # 3. boot
-    if args.Board == "dan" or args.Board == "bit":
+    if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
         loader.reset_to_boot_dan()
     elif args.Board == "kd233":
         loader.reset_to_boot_kd233()
@@ -1101,7 +1114,7 @@ if __name__ == '__main__':
     elif args.Board == "goD":
         loader.reset_to_boot_goD()
     else:
-        print(ERROR_MSG,"Board unknown !! please press reset to boot!!")
+        print(WARN_MSG,"Board unknown !! please press reset to boot!!")
 
     print(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
     loader._port.close()
