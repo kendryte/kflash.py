@@ -322,6 +322,7 @@ class ISPResponse:
         ISP_MEMORY_READ = 0xC4
         ISP_MEMORY_BOOT = 0xC5
         ISP_DEBUG_INFO = 0xD1
+        ISP_CHANGE_BAUDRATE = 0xc6
 
     class ErrorCode(Enum):
         ISP_RET_DEFAULT = 0
@@ -411,19 +412,41 @@ class MAIXLoader:
                     self._port.baudrate = 350
 
     def change_baudrate_stage0(self, baudrate):
-        print(INFO_MSG,"Selected Stage0 Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
-        baudrate_stage0 = 115200 #int(390000000/(int(380000000/baudrate)))
-        out = struct.pack('III', 0, 4, baudrate_stage0)
-        crc32_checksum = struct.pack('I', binascii.crc32(out) & 0xFFFFFFFF)
-        out = struct.pack('HH', 0xd6, 0x00) + crc32_checksum + out
-        self.write(out)
-        time.sleep(0.05)
-        self._port.baudrate = baudrate
-        if args.Board == "goE":
-            if baudrate == 4500000:
-                # OPENEC super baudrate
-                print(INFO_MSG, "Enable OPENEC super baudrate!!!",  BASH_TIPS['DEFAULT'])
-                self._port.baudrate = 300
+        # Dangerous, here are dinosaur infested!!!!!
+        # Don't touch this code unless you know what you are doing
+        # Stage0 baudrate is fixed
+        baudrate = 1500000
+        if args.Board == "goE" or args.Board == "trainer":
+            print(INFO_MSG,"Selected Stage0 Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
+            # This is for openec, contained ft2232, goE and trainer
+            print(INFO_MSG,"FT2232 mode", BASH_TIPS['DEFAULT'])
+            baudrate_stage0 = int(baudrate * 38.6 / 38)
+            out = struct.pack('III', 0, 4, baudrate_stage0)
+            crc32_checksum = struct.pack('I', binascii.crc32(out) & 0xFFFFFFFF)
+            out = struct.pack('HH', 0xc6, 0x00) + crc32_checksum + out
+            self.write(out)
+            time.sleep(0.05)
+            self._port.baudrate = baudrate
+
+            retry_count = 0
+            while 1:
+                retry_count = retry_count + 1
+                if retry_count > 3:
+                    print("\n" + ERROR_MSG,"Fast mode failed, please use slow mode by add --Slow parameter", BASH_TIPS['DEFAULT'])
+                    sys.exit(1)
+                try:
+                    loader.greeting()
+                    break
+                except TimeoutError:
+                    pass
+        elif args.Board == "dan" or args.Board == "bit" or args.Board == "kd233":
+            print(INFO_MSG,"CH340 mode", BASH_TIPS['DEFAULT'])
+            # This is for CH340, contained dan, bit and kd233
+            baudrate_stage0 = int(baudrate * 38.4 / 38)
+            # CH340 can not use this method, test failed, take risks at your own risk
+        else:
+            # This is for unknown board
+            print(WARN_MSG,"Unknown mode", BASH_TIPS['DEFAULT'])
 
     def __init__(self, port='/dev/ttyUSB1', baudrate=115200):
         # configure the serial connections (the parameters differs on the device you are connecting to)
@@ -913,6 +936,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
 
     parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goD, goE or trainer")
+    parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
     parser.add_argument("firmware", help="firmware bin path")
 
     args = parser.parse_args()
@@ -925,6 +949,10 @@ if __name__ == '__main__':
         WARN_MSG    = BASH_TIPS['YELLOW']+BASH_TIPS['BOLD']+'[WARN]'+BASH_TIPS['NORMAL']
         INFO_MSG    = BASH_TIPS['GREEN']+BASH_TIPS['BOLD']+'[INFO]'+BASH_TIPS['NORMAL']
         print(INFO_MSG,'ANSI colors not used',BASH_TIPS['DEFAULT'])
+
+    manually_set_the_board = False
+    if args.Board:
+        manually_set_the_board = True
 
     if args.port == "DEFAULT":
         if args.Board == "goE":
@@ -1070,6 +1098,10 @@ if __name__ == '__main__':
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
 
+    if manually_set_the_board and (not args.Slow):
+        if args.baudrate >= 1500000:
+            loader.change_baudrate_stage0(args.baudrate)
+
     # 2. download bootloader and firmware
     if args.sram:
         if file_format == ProgramFileFormat.FMT_KFPKG:
@@ -1083,7 +1115,13 @@ if __name__ == '__main__':
         # install bootloader at 0x80000000
         isp_loader = open(args.bootloader, 'rb').read() if args.bootloader else ISP_PROG
         loader.install_flash_bootloader(isp_loader)
+
+    # Boot the code from SRAM
     loader.boot()
+
+    # Dangerous, here are dinosaur infested!!!!!
+    # Don't touch this code unless you know what you are doing
+    loader._port.baudrate = 115200
 
     if args.sram:
         if(args.terminal == True):

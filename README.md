@@ -55,6 +55,17 @@ sudo python3 kflash.py -B dan -p /dev/ttyS13 firmware.bin # ttyS13 Stands for th
 sudo python3 kflash.py -B dan -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
 ```
 
+For fast programming,
+
+```bash
+# This will enable opoenec super-baudrate!
+python3 kflash.py -b 4500000 -B goE firmware.bin
+# Trainer could use 8000000 baudrate!
+python3 kflash.py -b 8000000 -B trainer firmware.bin
+# Dan could use 3000000 baudrate!
+python3 kflash.py -b 3000000 -B dan firmware.bin
+```
+
 ## Requirements
 
 - Python3
