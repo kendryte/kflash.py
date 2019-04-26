@@ -400,10 +400,15 @@ class MAIXLoader:
         time.sleep(0.05)
         self._port.baudrate = baudrate
         if args.Board == "goE":
-            if baudrate == 4500000:
+            if baudrate >= 4500000:
                 # OPENEC super baudrate
                 print(INFO_MSG, "Enable OPENEC super baudrate!!!",  BASH_TIPS['DEFAULT'])
-                self._port.baudrate = 300
+                if baudrate == 4500000:
+                    self._port.baudrate = 300
+                if baudrate == 6000000:
+                    self._port.baudrate = 250
+                if baudrate == 7500000:
+                    self._port.baudrate = 350
 
     def change_baudrate_stage0(self, baudrate):
         print(INFO_MSG,"Selected Stage0 Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
