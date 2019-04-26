@@ -415,6 +415,8 @@ class MAIXLoader:
         # Dangerous, here are dinosaur infested!!!!!
         # Don't touch this code unless you know what you are doing
         # Stage0 baudrate is fixed
+        # Contributor: [@rgwan](https://github.com/rgwan)
+        #              rgwan <dv.xw@qq.com>
         baudrate = 1500000
         if args.Board == "goE" or args.Board == "trainer":
             print(INFO_MSG,"Selected Stage0 Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
