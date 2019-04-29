@@ -79,7 +79,10 @@ Execute user code directly in SRAM and view in serial terminal,
 
 .. code:: bash
 
+    # For `.elf` file
     python3 kflash.py -b 4500000 -B goE -s -t hello_world
+    # For `.bin` file
+    python3 kflash.py -b 4500000 -B goE -s -t hello_world.bin
 
 Requirements
 ------------
