@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+from __future__ import (division, print_function, absolute_import, unicode_literals)
+
 import sys
 import time
 import zlib
@@ -43,7 +46,7 @@ try:
     import serial
     import serial.tools.list_ports
 except ImportError:
-    print(ERROR_MSG,'PySerial must be installed, run '+BASH_TIPS['GREEN']+'`pip3 install pyserial`',BASH_TIPS['DEFAULT'])
+    print(ERROR_MSG,'PySerial must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install pyserial`',BASH_TIPS['DEFAULT'])
     sys.exit(1)
 
 # AES is from: https://github.com/ricmoo/pyaes, Copyright by Richard Moore
@@ -333,9 +336,18 @@ class ISPResponse:
 
     @staticmethod
     def parse(data):
-        op = data[0]
-        reason = data[1]
+        # type: (bytes) -> (int, int, str)
+        op = 0
+        reason = 0
         text = ''
+
+        if (sys.version_info > (3, 0)):
+            op = int(data[0])
+            reason = int(data[1])
+        else:
+            op = ord(data[0])
+            reason = ord(data[1])
+
         try:
             if ISPResponse.ISPOperation(op) == ISPResponse.ISPOperation.ISP_DEBUG_INFO:
                 text = data[2:].decode()
@@ -365,9 +377,18 @@ class FlashModeResponse:
 
     @staticmethod
     def parse(data):
-        op = data[0]
-        reason = data[1]
+        # type: (bytes) -> (int, int, str)
+        op = 0
+        reason = 0
         text = ''
+
+        if (sys.version_info > (3, 0)):
+            op = int(data[0])
+            reason = int(data[1])
+        else:
+            op = ord(data[0])
+            reason = ord(data[1])
+
         if FlashModeResponse.Operation(op) == FlashModeResponse.Operation.ISP_DEBUG_INFO:
             text = data[2:].decode()
 
@@ -379,16 +400,91 @@ def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
 
+def getTerminalSize():
+   import platform
+   current_os = platform.system()
+   tuple_xy=None
+   if current_os == 'Windows':
+       tuple_xy = _getTerminalSize_windows()
+       if tuple_xy is None:
+          tuple_xy = _getTerminalSize_tput()
+          # needed for window's python in cygwin's xterm!
+   if current_os == 'Linux' or current_os == 'Darwin' or  current_os.startswith('CYGWIN'):
+       tuple_xy = _getTerminalSize_linux()
+   if tuple_xy is None:
+       # Use default value
+       tuple_xy = (80, 25)      # default value
+   return tuple_xy
+
+def _getTerminalSize_windows():
+    res=None
+    try:
+        from ctypes import windll, create_string_buffer
+
+        # stdin handle is -10
+        # stdout handle is -11
+        # stderr handle is -12
+
+        h = windll.kernel32.GetStdHandle(-12)
+        csbi = create_string_buffer(22)
+        res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
+    except:
+        return None
+    if res:
+        import struct
+        (bufx, bufy, curx, cury, wattr,
+         left, top, right, bottom, maxx, maxy) = struct.unpack("hhhhHhhhhhh", csbi.raw)
+        sizex = right - left + 1
+        sizey = bottom - top + 1
+        return sizex, sizey
+    else:
+        return None
+
+def _getTerminalSize_tput():
+    # get terminal width
+    # src: http://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window
+    try:
+       import subprocess
+       proc=subprocess.Popen(["tput", "cols"],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+       output=proc.communicate(input=None)
+       cols=int(output[0])
+       proc=subprocess.Popen(["tput", "lines"],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+       output=proc.communicate(input=None)
+       rows=int(output[0])
+       return (cols,rows)
+    except:
+       return None
+
+
+def _getTerminalSize_linux():
+    def ioctl_GWINSZ(fd):
+        try:
+            import fcntl, termios, struct, os
+            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ,'1234'))
+        except:
+            return None
+        return cr
+    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            cr = (env['LINES'], env['COLUMNS'])
+        except:
+            return None
+    return int(cr[1]), int(cr[0])
 
 def get_terminal_size(fallback=(100, 24)):
-    for i in range(0,3):
-        try:
-            columns, rows = os.get_terminal_size(i)
-        except OSError:
-            continue
-        break
-    else:  # set default if the loop completes which means all failed
+    try:
+        columns, rows = getTerminalSize()
+    except:
         columns, rows = fallback
+
     return columns, rows
 
 class MAIXLoader:
@@ -434,7 +530,7 @@ class MAIXLoader:
             while 1:
                 retry_count = retry_count + 1
                 if retry_count > 3:
-                    print("\n" + ERROR_MSG,"Fast mode failed, please use slow mode by add --Slow parameter", BASH_TIPS['DEFAULT'])
+                    print("\n" + ERROR_MSG,'Fast mode failed, please use slow mode by add parameter ' + BASH_TIPS['GREEN'] + '--Slow', BASH_TIPS['DEFAULT'])
                     sys.exit(1)
                 try:
                     loader.greeting()
@@ -872,7 +968,10 @@ class MAIXLoader:
                 continue
             self.flash_dataframe(segment.data(), segment['p_vaddr'])
 
-    def flash_firmware(self, firmware_bin: bytes, aes_key: bytes = None, address_offset = 0, sha256Prefix = True):
+    def flash_firmware(self, firmware_bin, aes_key = None, address_offset = 0, sha256Prefix = True):
+        # type: (bytes, bytes, int, bool) -> None
+        # Don't remove above code!
+
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
         if sha256Prefix == True:
