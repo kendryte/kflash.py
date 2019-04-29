@@ -474,7 +474,7 @@ def _getTerminalSize_linux():
             pass
     if not cr:
         try:
-            cr = (env['LINES'], env['COLUMNS'])
+            cr = (os.env['LINES'], os.env['COLUMNS'])
         except:
             return None
     return int(cr[1]), int(cr[0])
