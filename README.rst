@@ -73,13 +73,22 @@ For fast programming,
     # Dan could use 3000000 baudrate!
     python3 kflash.py -b 3000000 -B dan firmware.bin
 
+Execute user code directly in SRAM and view in serial terminal,
+
+    The baudrate is 115200, not download baudrate
+
+.. code:: bash
+
+    python3 kflash.py -b 4500000 -B goE -s -t hello_world
+
 Requirements
 ------------
 
--  Python3
--  PySerial
+-  python>=3 or python=2.7
+-  pyserial>=3.4
+-  pyelftools>=0.25
 
-    Also supports python2, but python3 is recommended.
+    Python3 is recommended.
 
 Windows Requirements
 ~~~~~~~~~~~~~~~~~~~~
