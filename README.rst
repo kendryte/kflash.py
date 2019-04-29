@@ -75,14 +75,12 @@ For fast programming,
 
 Execute user code directly in SRAM and view in serial terminal,
 
-    The baudrate is 115200, not download baudrate
-
 .. code:: bash
 
     # For `.elf` file
-    python3 kflash.py -b 4500000 -B goE -s -t hello_world
+    python3 kflash.py -b 115200 -B goE -s -t hello_world
     # For `.bin` file
-    python3 kflash.py -b 4500000 -B goE -s -t hello_world.bin
+    python3 kflash.py -b 115200 -B goE -s -t hello_world.bin
 
 Requirements
 ------------

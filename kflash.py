@@ -1200,7 +1200,7 @@ if __name__ == '__main__':
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
 
     if manually_set_the_board and (not args.Slow):
-        if args.baudrate >= 1500000:
+        if (args.baudrate >= 1500000) or args.sram:
             loader.change_baudrate_stage0(args.baudrate)
 
     # 2. download bootloader and firmware
@@ -1220,15 +1220,18 @@ if __name__ == '__main__':
     # Boot the code from SRAM
     loader.boot()
 
-    # Dangerous, here are dinosaur infested!!!!!
-    # Don't touch this code unless you know what you are doing
-    loader._port.baudrate = 115200
-
     if args.sram:
+        # Dangerous, here are dinosaur infested!!!!!
+        # Don't touch this code unless you know what you are doing
+        loader._port.baudrate = args.baudrate
         print(INFO_MSG,"Boot user code from SRAM", BASH_TIPS['DEFAULT'])
         if(args.terminal == True):
             open_terminal(False)
         exit(0)
+
+    # Dangerous, here are dinosaur infested!!!!!
+    # Don't touch this code unless you know what you are doing
+    loader._port.baudrate = 115200
 
     print(INFO_MSG,"Wait For 0.1 second for ISP to Boot", BASH_TIPS['DEFAULT'])
 
