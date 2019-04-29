@@ -1225,8 +1225,10 @@ if __name__ == '__main__':
     loader._port.baudrate = 115200
 
     if args.sram:
+        print(INFO_MSG,"Boot user code from SRAM", BASH_TIPS['DEFAULT'])
         if(args.terminal == True):
             open_terminal(False)
+        exit(0)
 
     print(INFO_MSG,"Wait For 0.1 second for ISP to Boot", BASH_TIPS['DEFAULT'])
 
