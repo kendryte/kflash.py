@@ -951,8 +951,12 @@ class MAIXLoader:
         self.flash_dataframe(data, address=0x80000000)
 
     def load_elf_to_sram(self, f):
-        from elftools.elf.elffile import ELFFile
-        from elftools.elf.descriptions import describe_p_type
+        try:
+            from elftools.elf.elffile import ELFFile
+            from elftools.elf.descriptions import describe_p_type
+        except ImportError:
+            print(ERROR_MSG,'pyelftools must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install pyelftools`',BASH_TIPS['DEFAULT'])
+            sys.exit(1)
 
         elffile = ELFFile(f)
         if elffile['e_entry'] != 0x80000000:
@@ -1096,18 +1100,20 @@ if __name__ == '__main__':
 
     with open(args.firmware, 'rb') as f:
         file_header = f.read(4)
-        if file_header.startswith(bytes([0x50, 0x4B])):
+        #if file_header.startswith(bytes([0x50, 0x4B])):
+        if file_header.startswith(b'\x50\x4B'):
             if ".kfpkg" != os.path.splitext(args.firmware)[1]:
                 print(INFO_MSG, 'Find a zip file, but not with ext .kfpkg:', args.firmware, BASH_TIPS['DEFAULT'])
             else:
                 file_format = ProgramFileFormat.FMT_KFPKG
 
-        if file_header.startswith(bytes([0x7F, 0x45, 0x4C, 0x46])):
+        #if file_header.startswith(bytes([0x7F, 0x45, 0x4C, 0x46])):
+        if file_header.startswith(b'\x7f\x45\x4c\x46'):
             file_format = ProgramFileFormat.FMT_ELF
             if args.sram:
                 print(INFO_MSG, 'Find an ELF file:', args.firmware, BASH_TIPS['DEFAULT'])
             else:
-                print(ERROR_MSG, 'This is an ELF file and cannot be programmed directly:', args.firmware, BASH_TIPS['DEFAULT'])
+                print(ERROR_MSG, 'This is an ELF file and cannot be programmed to flash directly:', args.firmware, BASH_TIPS['DEFAULT'])
                 print(ERROR_MSG, 'Please retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
                 sys.exit(1)
 
