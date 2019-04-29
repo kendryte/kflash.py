@@ -44,21 +44,57 @@ For K210 Trainer V0.01b, BOARD must choose ``-B trainer``.
 For KD233, BOARD must choose ``-B kd233``, and the jumper for kd233 automatic
 download circuit must be set.
 
+Installation
+------------
+
+.. code:: bash
+
+    sudo pip3 install kflash
+
+If you receive an error, please try
+
+.. code:: bash
+
+    sudo python -m pip install kflash
+    sudo python3 -m pip install kflash
+    sudo pip install kflash
+    sudo pip2 install kflash
+
+For linux users, first of all, you must add yourself to dialout group.
+Or you have to use root permission every time.
+
+.. code:: bash
+
+    sudo usermod -a -G dialout $(whoami)
+
 Sample Usage
 ------------
 
 .. code:: bash
 
     # Linux or macOS
+    # Using pip
+    kflash -B dan firmware.bin
+    kflash -B dan -t firmware.bin # Open a Serial Terminal After Finish
+    # Using source code
     python3 kflash.py -B dan firmware.bin
     python3 kflash.py -B dan -t firmware.bin # Open a Serial Terminal After Finish
 
     # Windows CMD or PowerShell
+    # Using pip
+    kflash -B dan firmware.bin
+    kflash -B dan -t firmware.bin # Open a Serial Terminal After Finish
+    kflash -B dan -n -t firmware.bin # Open a Serial Terminal After Finish, do not use ANSI colors
+    # Using source code
     python kflash.py -B dan firmware.bin
     python kflash.py -B dan -t firmware.bin # Open a Serial Terminal After Finish
     python kflash.py -B dan -n -t firmware.bin # Open a Serial Terminal After Finish, do not use ANSI colors
 
     # Windows Subsystem for Linux
+    # Using pip
+    sudo kflash -B dan -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
+    sudo kflash -B dan -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
+    # Using source code
     sudo python3 kflash.py -B dan -p /dev/ttyS13 firmware.bin # ttyS13 Stands for the COM13 in Device Manager
     sudo python3 kflash.py -B dan -p /dev/ttyS13 -t firmware.bin # Open a Serial Terminal After Finish
 
@@ -66,6 +102,15 @@ For fast programming,
 
 .. code:: bash
 
+    # Using pip
+    # This will enable opoenec super-baudrate!
+    kflash -b 4500000 -B goE firmware.bin
+    # Trainer could use 8000000 baudrate!
+    kflash -b 8000000 -B trainer firmware.bin
+    # Dan could use 3000000 baudrate!
+    kflash -b 3000000 -B dan firmware.bin
+
+    # Using source code
     # This will enable opoenec super-baudrate!
     python3 kflash.py -b 4500000 -B goE firmware.bin
     # Trainer could use 8000000 baudrate!
@@ -77,6 +122,13 @@ Execute user code directly in SRAM and view in serial terminal,
 
 .. code:: bash
 
+    # Using pip
+    # For `.elf` file
+    kflash -b 115200 -B goE -s -t hello_world
+    # For `.bin` file
+    kflash -b 115200 -B goE -s -t hello_world.bin
+
+    # Using source code
     # For `.elf` file
     python3 kflash.py -b 115200 -B goE -s -t hello_world
     # For `.bin` file
@@ -211,7 +263,10 @@ Linux
 
 .. code:: bash
 
+    # Using pip
     python3 kflash.py -p /dev/ttyUSB13 firmware.bin
+    # Using source code
+    kflash -p /dev/ttyUSB13 firmware.bin
 
 macOS
 ~~~~~
@@ -236,6 +291,9 @@ macOS
 
 .. code:: bash
 
+    # Using pip
+    kflash -p /dev/cu.wchusbserial1410 firmware.bin
+    # Using source code
     python3 kflash.py -p /dev/cu.wchusbserial1410 firmware.bin
 
 You may unable to find the device even in the /dev, check the link below for
