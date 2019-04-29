@@ -901,7 +901,7 @@ class MAIXLoader:
         '''
         typedef struct __attribute__((packed)) {
             uint8_t op;
-            int32_t checksum; // 下面的所有字段都要参与checksum的计算
+            int32_t checksum; /* All the fields below are involved in the calculation of checksum */
             uint32_t address;
             uint32_t data_len;
             uint8_t data_buf[1024];
@@ -947,7 +947,7 @@ class MAIXLoader:
         #      FlashModeResponse.ErrorCode(reason).name)
 
     def install_flash_bootloader(self, data):
-        # 1. 刷入 flash bootloader
+        # Download flash bootloader
         self.flash_dataframe(data, address=0x80000000)
 
     def load_elf_to_sram(self, f):
@@ -975,11 +975,11 @@ class MAIXLoader:
         #print('[DEBUG] flash_firmware DEBUG: aeskey=', aes_key)
 
         if sha256Prefix == True:
-            # 固件加上头
-            # 格式: SHA256(after)(32bytes) + AES_CIPHER_FLAG (1byte) + firmware_size(4bytes) + firmware_data
+            # Add header to the firmware
+            # Format: SHA256(after)(32bytes) + AES_CIPHER_FLAG (1byte) + firmware_size(4bytes) + firmware_data
             aes_cipher_flag = b'\x01' if aes_key else b'\x00'
 
-            # 加密
+            # Encryption
             if aes_key:
                 enc = AES_128_CBC(aes_key, iv=b'\x00'*16).encrypt
                 padded = firmware_bin + b'\x00'*15 # zero pad
@@ -994,7 +994,7 @@ class MAIXLoader:
             firmware_with_header = data + sha256_hash
 
             total_chunk = math.ceil(len(firmware_with_header)/ISP_FLASH_DATA_FRAME_SIZE)
-            # 3. 分片刷入固件
+            # Slice download firmware
             data_chunks = chunks(firmware_with_header, ISP_FLASH_DATA_FRAME_SIZE)  # 4kiB for a sector, 16kiB for dataframe
         else:
             total_chunk = math.ceil(len(firmware_bin)/ISP_FLASH_DATA_FRAME_SIZE)
@@ -1004,7 +1004,7 @@ class MAIXLoader:
         for n, chunk in enumerate(data_chunks):
             chunk = chunk.ljust(ISP_FLASH_DATA_FRAME_SIZE, b'\x00')  # align by size of dataframe
 
-            # 3.1 刷入一个dataframe
+            # Download a dataframe
             #print('[INFO]', 'Write firmware data piece')
             self.dump_to_flash(chunk, address= n * ISP_FLASH_DATA_FRAME_SIZE + address_offset)
             columns, lines = get_terminal_size()
