@@ -71,6 +71,8 @@ python3 kflash.py -b 3000000 -B dan firmware.bin
 - Python3
 - PySerial
 
+> Also supports python2, but python3 is recommended.
+
 ### Windows
 
 - Download and Install [Python3 at python.org](https://www.python.org/downloads/release/python-367/)
