@@ -28,7 +28,7 @@ INFO_MSG    = BASH_TIPS['GREEN']+BASH_TIPS['BOLD']+'[INFO]'+BASH_TIPS['NORMAL']
 
 VID_LIST_FOR_AUTO_LOOKUP = "(1A86)|(0403)|(067B)|(10C4)|(C251)|(0403)"
 #                            WCH    FTDI    PL     CL    DAP   OPENEC
-timeout = 0.5
+ISP_RECEIVE_TIMEOUT = 0.5
 
 MAX_RETRY_TIMES = 10
 
@@ -592,7 +592,7 @@ class MAIXLoader:
         # find start boarder
         #sys.stdout.write('[RECV one return] raw data: ')
         while 1:
-            if time.time() - timeout_init > timeout:
+            if time.time() - timeout_init > ISP_RECEIVE_TIMEOUT:
                 # print()
                 # print(ERROR_MSG,'Response timeout',BASH_TIPS['DEFAULT'])
                 raise TimeoutError
@@ -604,7 +604,7 @@ class MAIXLoader:
 
         in_escape = False
         while 1:
-            if time.time() - timeout_init > timeout:
+            if time.time() - timeout_init > ISP_RECEIVE_TIMEOUT:
                 raise TimeoutError
             c = self._port.read(1)
             #sys.stdout.write(binascii.hexlify(c).decode())
@@ -1201,7 +1201,7 @@ if __name__ == '__main__':
                 break
             except TimeoutError:
                 pass
-    timeout = 3
+
     print()
     print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
 
