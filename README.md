@@ -1,6 +1,7 @@
 # kflash, A Python-based Kendryte K210 UART ISP Utility
 
 ## Usage
+
 ```bash
 usage: kflash.py [-h] [-p PORT] [-c CHIP] [-b BAUDRATE] [-l BOOTLOADER]
                  [-k KEY] [-v] [-t] [-n] [-s] -B BOARD
@@ -73,7 +74,7 @@ python3 kflash.py -b 3000000 -B dan firmware.bin
 
 > Also supports python2, but python3 is recommended.
 
-### Windows
+### Windows Requirements
 
 - Download and Install [Python3 at python.org](https://www.python.org/downloads/release/python-367/)
 - Download the [get-pip.py at https://bootstrap.pypa.io/get-pip.py](https://bootstrap.pypa.io/get-pip.py)
@@ -86,7 +87,7 @@ python3 kflash.py -b 3000000 -B dan firmware.bin
 
  --------
 
-### macOS
+### macOS Requirements
 
 ```bash
 # Install Homebrew, an awesome package manager for macOS
@@ -97,13 +98,14 @@ python3 -mpip3 install pyserial
 
  --------
 
-### Ubuntu, Debian
+### Ubuntu, Debian Requirements
 
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip
 sudo pip3 install pyserial
 ```
+
  --------
 
 ### Fedora
