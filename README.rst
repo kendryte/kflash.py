@@ -6,28 +6,32 @@ Usage
 
 .. code:: bash
 
-    usage: kflash.py [-h] [-p PORT] [-c CHIP] [-b BAUDRATE] [-l BOOTLOADER]
-                     [-k KEY] [-v] [-t] [-n] [-s] -B BOARD
-                     firmware
+    # kflash --help
+    usage: kflash [-h] [-p PORT] [-f FLASH] [-b BAUDRATE] [-l BOOTLOADER]
+                    [-k KEY] [-v] [-t] [-n] [-s] [-B BOARD] [-S SLOW]
+                    firmware
 
     positional arguments:
-      firmware              firmware bin path
+    firmware              firmware bin path
 
     optional arguments:
-      -h, --help            show this help message and exit
-      -p PORT, --port PORT  COM Port
-      -c CHIP, --chip CHIP  SPI Flash type, 0 for in-chip, 1 for on-board
-      -b BAUDRATE, --baudrate BAUDRATE
+    -h, --help            show this help message and exit
+    -p PORT, --port PORT  COM Port
+    -f FLASH, --flash FLASH
+                            SPI Flash type, 0 for SPI3, 1 for SPI0
+    -b BAUDRATE, --baudrate BAUDRATE
                             UART baudrate for uploading firmware
-      -l BOOTLOADER, --bootloader BOOTLOADER
+    -l BOOTLOADER, --bootloader BOOTLOADER
                             bootloader bin path
-      -k KEY, --key KEY     AES key in hex, if you need encrypt your firmware.
-      -v, --verbose         increase output verbosity
-      -t, --terminal        Start a terminal after finish (Python miniterm)
-      -n, --noansi          Do not use ANSI colors, recommended in Windows CMD
-      -s, --sram            Download firmware to SRAM and boot
-      -B BOARD, --Board BOARD
-                            Select dev board, kd233 or dan or bit or goD or goE
+    -k KEY, --key KEY     AES key in hex, if you need encrypt your firmware.
+    -v, --verbose         increase output verbosity
+    -t, --terminal        Start a terminal after finish (Python miniterm)
+    -n, --noansi          Do not use ANSI colors, recommended in Windows CMD
+    -s, --sram            Download firmware to SRAM and boot
+    -B BOARD, --Board BOARD
+                            Select dev board, e.g. kd233, dan, bit, goD, goE or
+                            trainer
+    -S SLOW, --Slow SLOW  Slow download mode
 
 Attention
 ---------
@@ -143,6 +147,10 @@ Requirements
 
     Python3 is recommended.
 
+If your python version below python3.4, you need:
+
+-  enum34>=1.1.6
+
 Windows Requirements
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -150,7 +158,13 @@ Windows Requirements
 -  Download the `get-pip.py at https://bootstrap.pypa.io/get-pip.py <https://bootstrap.pypa.io/get-pip.py>`__
 -  Start CMD or PowerShell Terminal and run the following command
 
-``bash  python get-pip.py  python -mpip install pyserial``
+.. code:: bash
+
+    python get-pip.py
+    python -m pip install pyserial
+    python -m pip install pyelftools
+    # When you python version below python3.4
+    python -m pip install enum34
 
 --------------
 
@@ -162,7 +176,8 @@ macOS Requirements
     # Install Homebrew, an awesome package manager for macOS
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     brew install python
-    python3 -mpip3 install pyserial
+    python3 -m pip3 install pyserial
+    python3 -m pip3 install pyelftools
 
 --------------
 
@@ -174,6 +189,7 @@ Ubuntu, Debian Requirements
     sudo apt update
     sudo apt install python3 python3-pip
     sudo pip3 install pyserial
+    sudo pip3 install pyelftools 
 
 --------------
 
@@ -184,6 +200,7 @@ Fedora
 
     sudo dnf install python3
     sudo python3 -m pip install pyserial
+    sudo python3 -m pip install pyelftools
 
 --------------
 
@@ -197,6 +214,7 @@ CentOS
     sudo ln -s /bin/python3.6 /usr/bin/python3
     sudo ln -s /bin/pip3.6 /usr/bin/pip3
     sudo pip3 install pyserial
+    sudo pip3 install pyelftools 
 
 Trouble Shooting
 ----------------
@@ -227,7 +245,12 @@ Windows
    **USB-SERIAL CH340(COM13)**.
 
 .. code:: bash
-
+    # Using pip, only need once when you install
+    pip install kflash
+    kflash -p COM13 firmware.bin
+    # Or
+    kflash.exe -p COM13 firmware.bin
+    # Using source code
     python kflash.py -p COM13 firmware.bin
 
 Windows Subsystem For Linux(WSL)
@@ -238,6 +261,10 @@ Windows Subsystem For Linux(WSL)
 
 .. code:: bash
 
+    # Using pip, only need once when you install
+    sudo pip3 install kflash
+    sudo kflash -p /dev/ttyS13 firmware.bin # You have to use *sudo* here
+    # Using source code
     sudo python3 kflash.py -p /dev/ttyS13 firmware.bin # You have to use *sudo* here
 
 Linux

@@ -8,7 +8,6 @@ import time
 import zlib
 import copy
 import struct
-from enum import Enum
 import binascii
 import hashlib
 import argparse
@@ -38,12 +37,11 @@ class KFlash:
         ISP_FLASH_SECTOR_SIZE = 4096
         ISP_FLASH_DATA_FRAME_SIZE = ISP_FLASH_SECTOR_SIZE * 16
 
-        class TimeoutError(Exception): pass
-
-        class ProgramFileFormat(Enum):
-            FMT_BINARY = 0
-            FMT_ELF = 1
-            FMT_KFPKG = 2
+        try:
+            from enum import Enum
+        except ImportError:
+            print(ERROR_MSG,'enum34 must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install enum34`',BASH_TIPS['DEFAULT'])
+            sys.exit(1)
 
         try:
             import serial
@@ -51,6 +49,13 @@ class KFlash:
         except ImportError:
             print(ERROR_MSG,'PySerial must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install pyserial`',BASH_TIPS['DEFAULT'])
             sys.exit(1)
+
+        class TimeoutError(Exception): pass
+
+        class ProgramFileFormat(Enum):
+            FMT_BINARY = 0
+            FMT_ELF = 1
+            FMT_KFPKG = 2
 
         # AES is from: https://github.com/ricmoo/pyaes, Copyright by Richard Moore
         class AES:
@@ -1027,13 +1032,13 @@ class KFlash:
             import serial.tools.miniterm
             # For using the terminal with MaixPy the 'filter' option must be set to 'direct'
             # because some control characters are emited
-            sys.argv = ['kflash.py', _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
+            sys.argv = [sys.argv[0], _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
 
         parser = argparse.ArgumentParser()
         parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
-        parser.add_argument("-c", "--chip", help="SPI Flash type, 0 for in-chip, 1 for on-board", default=1)
+        parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
         parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
         parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
         parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
@@ -1064,11 +1069,14 @@ class KFlash:
         if args.port == "DEFAULT":
             if args.Board == "goE":
                 list_port_info = list(serial.tools.list_ports.grep("0403")) #Take the second one
-                if(len(list_port_info)==0):
+                if len(list_port_info) == 0:
                     print(ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     sys.exit(1)
                 list_port_info.sort()
-                _port = list_port_info[1].device
+                if len(list_port_info) == 1:
+                    _port = list_port_info[0].device
+                elif len(list_port_info) > 1:
+                    _port = list_port_info[1].device
                 print(INFO_MSG,"COM Port Auto Detected, Selected ", _port, BASH_TIPS['DEFAULT'])
             elif args.Board == "trainer":
                 list_port_info = list(serial.tools.list_ports.grep("0403")) #Take the first one
@@ -1252,7 +1260,7 @@ class KFlash:
             print(INFO_MSG,"Baudrate changed, greeting with ISP again ... ", BASH_TIPS['DEFAULT'])
             loader.flash_greeting()
 
-        loader.init_flash(args.chip)
+        loader.init_flash(args.flash)
 
         if file_format == ProgramFileFormat.FMT_KFPKG:
             print(INFO_MSG,"Extracting KFPKG ... ", BASH_TIPS['DEFAULT'])
