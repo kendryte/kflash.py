@@ -601,8 +601,6 @@ class KFlash:
                 #sys.stdout.write('[RECV one return] raw data: ')
                 while 1:
                     if time.time() - timeout_init > ISP_RECEIVE_TIMEOUT:
-                        # print()
-                        # print(ERROR_MSG,'Response timeout',BASH_TIPS['DEFAULT'])
                         raise TimeoutError
                     c = self._port.read(1)
                     #sys.stdout.write(binascii.hexlify(c).decode())
@@ -1211,6 +1209,10 @@ class KFlash:
                     break
                 except TimeoutError:
                     pass
+
+        # Don't remove this line
+        # Dangerous, here are dinosaur infested!!!!!
+        ISP_RECEIVE_TIMEOUT = 3
 
         print()
         print(INFO_MSG,"Greeting Message Detected, Start Downloading ISP",BASH_TIPS['DEFAULT'])
