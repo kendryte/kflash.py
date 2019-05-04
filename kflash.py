@@ -973,7 +973,7 @@ class KFlash:
                     print(INFO_MSG, ("Program Header: Size: %d, Virtual Address: 0x%x, Type: %s" % (segment['p_filesz'], segment['p_vaddr'], t)), BASH_TIPS['DEFAULT'])
                     if not (segment['p_vaddr'] & 0x80000000):
                         continue
-                    if segment['p_filesz']==0 or segment['p_vaddr']==0:
+                    if segment['p_type']!='PT_LOAD' or segment['p_filesz']==0 or segment['p_vaddr']==0:
                         print("Skipped")
                         continue
                     self.flash_dataframe(segment.data(), segment['p_vaddr'])
