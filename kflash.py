@@ -522,7 +522,8 @@ class KFlash:
                 columns, rows = getTerminalSize()
             except:
                 columns, rows = fallback
-
+            if not terminal:
+                columns, rows = (50,1)
             return columns, rows
 
         class MAIXLoader:
