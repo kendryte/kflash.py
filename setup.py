@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 setup(
     name='kflash',
     py_modules=['kflash'],
-    version='0.8.2',
+    version='0.8.3',
     description=(
         'Kendryte UART ISP Utility - programming code to k210'
     ),

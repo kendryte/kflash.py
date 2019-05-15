@@ -1075,13 +1075,13 @@ class KFlash:
 
             def kill(self):
                 self._kill_process = True
-    
+
             def checkKillExit(self):
                 if self._kill_process:
                     self._port.close()
                     self._kill_process = False
                     raise Exception("Cancel")
-            
+
             def printf(self, *args):
                 if self.print_callback:
                     self.print_callback(args)
@@ -1098,14 +1098,15 @@ class KFlash:
             sys.argv = [sys.argv[0], _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
-        
+
         parser = argparse.ArgumentParser()
         parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
         parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
         parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
-        parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
+        parser.add_argument("-l", "--bootloader", help="Bootloader bin path", required=False, default=None)
         parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
-        parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False, action="store_true")
+        parser.add_argument("-v", "--version", help="Print version.", action='version', version='0.8.3')
+        parser.add_argument("--verbose", help="Increase output verbosity", default=False, action="store_true")
         parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
         parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
         parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
@@ -1395,7 +1396,7 @@ class KFlash:
 
         if(args.terminal == True):
             open_terminal(True)
-    
+
     def kill(self):
         if self.loader:
             self.loader.kill()
