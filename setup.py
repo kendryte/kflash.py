@@ -13,6 +13,7 @@ setup(
         'Kendryte UART ISP Utility - programming code to k210'
     ),
     long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     author='https://github.com/kendryte/kflash.py/graphs/contributors',
     author_email='auto@canaan-creative.com',
     maintainer='Huang Rui',
