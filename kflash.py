@@ -728,51 +728,51 @@ class KFlash:
                 self._port.setDTR (False)
                 time.sleep(0.1)
 
-            # maix go for old cmsis-dap firmware
+            # maix goD for old cmsis-dap firmware
             def reset_to_isp_goD(self):
                 self._port.setDTR (True)   ## output 0
                 self._port.setRTS (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #printf('-- RESET to LOW --')
                 # Pull reset down and keep 10ms
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #printf('-- RESET to HIGH, BOOT --')
                 # Pull IO16 to low and release reset
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
             def reset_to_boot_goD(self):
                 self._port.setDTR (False)
                 self._port.setRTS (False)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #printf('-- RESET to LOW --')
                 # Pull reset down and keep 10ms
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #printf('-- RESET to HIGH, BOOT --')
                 # Pull IO16 to low and release reset
                 self._port.setRTS (True)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
 
-            # maix go for openec or new cmsis-dap  firmware
+            # maix goE for openec or new cmsis-dap  firmware
             def reset_to_boot_maixgo(self):
                 self._port.setDTR (False)
                 self._port.setRTS (False)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #printf('-- RESET to LOW --')
                 # Pull reset down and keep 10ms
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #printf('-- RESET to HIGH, BOOT --')
                 # Pull IO16 to low and release reset
                 self._port.setRTS (False)
                 self._port.setDTR (False)
-                time.sleep(0.01)
+                time.sleep(0.1)
 
             def greeting(self):
                 self._port.write(b'\xc0\xc2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0')
@@ -1110,7 +1110,7 @@ class KFlash:
         parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
         parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
 
-        parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goD, goE or trainer")
+        parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goE, goD, maixduino, or trainer")
         parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
         if terminal:
             parser.add_argument("firmware", help="firmware bin path")
@@ -1125,7 +1125,8 @@ class KFlash:
             args.sram = sram
             args.Board = board
             args.firmware = file
-
+        if args.Board == "maixduino":
+            args.Board = "goE"
         if (args.noansi == True):
             BASH_TIPS = dict(NORMAL='',BOLD='',DIM='',UNDERLINE='',
                                 DEFAULT='', RED='', YELLOW='', GREEN='',
