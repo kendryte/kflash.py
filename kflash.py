@@ -1098,7 +1098,7 @@ class KFlash:
             sys.argv = [sys.argv[0], _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
-        
+        boards_choices = ["kd233", "dan", "bit", "bit_mic", "goE", "goD", "maixduino", "trainer"]
         parser = argparse.ArgumentParser()
         parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
         parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
@@ -1109,8 +1109,7 @@ class KFlash:
         parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
         parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
         parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
-
-        parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goE, goD, maixduino, or trainer")
+        parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. -B kd233", choices=boards_choices)
         parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
         if terminal:
             parser.add_argument("firmware", help="firmware bin path")
@@ -1125,7 +1124,7 @@ class KFlash:
             args.sram = sram
             args.Board = board
             args.firmware = file
-        if args.Board == "maixduino":
+        if args.Board == "maixduino" or args.Board == "bit_mic":
             args.Board = "goE"
         if (args.noansi == True):
             BASH_TIPS = dict(NORMAL='',BOLD='',DIM='',UNDERLINE='',
