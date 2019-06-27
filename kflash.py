@@ -40,7 +40,7 @@ class KFlash:
         global g_print_callback
         g_print_callback = print_callback
 
-    def process(self, terminal=True, dev="", baudrate=1500000, board="DEFAULT", sram = False, file="", callback=None, noansi=False):
+    def process(self, terminal=True, dev="", baudrate=1500000, board=None, sram = False, file="", callback=None, noansi=False, terminal_auto_size=False, terminal_size=(50, 1)):
         self.killProcess = False
         BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
                             DEFAULT='\033[0m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
@@ -523,7 +523,8 @@ class KFlash:
             except:
                 columns, rows = fallback
             if not terminal:
-                columns, rows = (50,1)
+                if not terminal_auto_size:
+                    columns, rows = terminal_size
             return columns, rows
 
         class MAIXLoader:
@@ -1099,22 +1100,36 @@ class KFlash:
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
         boards_choices = ["kd233", "dan", "bit", "bit_mic", "goE", "goD", "maixduino", "trainer"]
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
-        parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
-        parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
-        parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
-        parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
-        parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False, action="store_true")
-        parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
-        parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
-        parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
-        parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. -B kd233", choices=boards_choices)
-        parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
         if terminal:
-            parser.add_argument("firmware", help="firmware bin path")
+            parser = argparse.ArgumentParser()
+            parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
+            parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
+            parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
+            parser.add_argument("-l", "--bootloader", help="bootloader bin path", required=False, default=None)
+            parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
+            parser.add_argument("-v", "--verbose", help="increase output verbosity", default=False, action="store_true")
+            parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
+            parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
+            parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
+            parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. -B kd233", choices=boards_choices)
+            parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
+            if terminal:
+                parser.add_argument("firmware", help="firmware bin path")
 
-        args = parser.parse_args()
+            args = parser.parse_args()
+        else:
+            args = argparse.Namespace()
+            setattr(args, "port", "DEFAULT")
+            setattr(args, "flash", 1)
+            setattr(args, "baudrate", 115200)
+            setattr(args, "bootloader", None)
+            setattr(args, "key", None)
+            setattr(args, "verbose", False)
+            setattr(args, "terminal", False)
+            setattr(args, "noansi", False)
+            setattr(args, "sram", False)
+            setattr(args, "Board", None)
+            setattr(args, "Slow", False)
 
         # udpate args for none terminal call
         if not terminal:
