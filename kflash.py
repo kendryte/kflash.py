@@ -40,7 +40,7 @@ class KFlash:
         global g_print_callback
         g_print_callback = print_callback
 
-    def process(self, terminal=True, dev="", baudrate=1500000, board=None, sram = False, file="", callback=None, noansi=False, terminal_auto_size=False, terminal_size=(50, 1)):
+    def process(self, terminal=True, dev="", baudrate=1500000, board=None, sram = False, file="", callback=None, noansi=False, terminal_auto_size=False, terminal_size=(50, 1), slow_mode = False):
         self.killProcess = False
         BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
                             DEFAULT='\033[0m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
@@ -1139,6 +1139,7 @@ class KFlash:
             args.sram = sram
             args.Board = board
             args.firmware = file
+            args.Slow = slow_mode
         if args.Board == "maixduino" or args.Board == "bit_mic":
             args.Board = "goE"
         if (args.noansi == True):
