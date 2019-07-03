@@ -73,6 +73,14 @@ class KFlash:
             err = tuple2str(err)
             raise Exception(err)
 
+        def raise_exception(exception):
+            if self.loader:
+                try:
+                    self.loader._port.close()
+                except Exception:
+                    pass
+            raise exception
+
         class TimeoutError(Exception): pass
 
         class ProgramFileFormat(Enum):
@@ -120,7 +128,7 @@ class KFlash:
             def __init__(self, key):
 
                 if len(key) not in (16, 24, 32):
-                    raise ValueError('Invalid key size')
+                    raise_exception( ValueError('Invalid key size') )
 
                 rounds = self.number_of_rounds[len(key)]
 
@@ -193,7 +201,7 @@ class KFlash:
                 'Encrypt a block of plain text using the AES block cipher.'
 
                 if len(plaintext) != 16:
-                    raise ValueError('wrong block length')
+                    raise_exception( ValueError('wrong block length') )
 
                 rounds = len(self._Ke) - 1
                 (s1, s2, s3) = [1, 2, 3]
@@ -227,7 +235,7 @@ class KFlash:
                 'Decrypt a block of cipher text using the AES block cipher.'
 
                 if len(ciphertext) != 16:
-                    raise ValueError('wrong block length')
+                    raise_exception( ValueError('wrong block length') )
 
                 rounds = len(self._Kd) - 1
                 (s1, s2, s3) = [3, 2, 1]
@@ -264,14 +272,14 @@ class KFlash:
                 if iv is None:
                     self._last_cipherblock = [ 0 ] * 16
                 elif len(iv) != 16:
-                    raise ValueError('initialization vector must be 16 bytes')
+                    raise_exception( ValueError('initialization vector must be 16 bytes') )
                 else:
                     self._last_cipherblock = iv
 
 
             def encrypt(self, plaintext):
                 if len(plaintext) != 16:
-                    raise ValueError('plaintext block must be 16 bytes')
+                    raise_exception( ValueError('plaintext block must be 16 bytes') )
 
                 precipherblock = [ (p ^ l) for (p, l) in zip(plaintext, self._last_cipherblock) ]
                 self._last_cipherblock = self._aes.encrypt(precipherblock)
@@ -280,7 +288,7 @@ class KFlash:
 
             def decrypt(self, ciphertext):
                 if len(ciphertext) != 16:
-                    raise ValueError('ciphertext block must be 16 bytes')
+                    raise_exception( ValueError('ciphertext block must be 16 bytes') )
 
                 cipherblock = ciphertext
                 plaintext = [ (p ^ l) for (p, l) in zip(self._aes.decrypt(cipherblock), self._last_cipherblock) ]
@@ -327,7 +335,7 @@ class KFlash:
                 waiting = port.inWaiting()
                 read_bytes = port.read(1 if waiting == 0 else waiting)
                 if read_bytes == b'':
-                    raise Exception("Timed out waiting for packet %s" % ("header" if partial_packet is None else "content"))
+                    raise_exception( Exception("Timed out waiting for packet %s" % ("header" if partial_packet is None else "content")) )
                 for b in read_bytes:
 
                     if type(b) is int:
@@ -337,7 +345,7 @@ class KFlash:
                         if b == b'\xc0':
                             partial_packet = b""
                         else:
-                            raise Exception('Invalid head of packet (%r)' % b)
+                            raise_exception( Exception('Invalid head of packet (%r)' % b) )
                     elif in_escape:  # part-way through escape sequence
                         in_escape = False
                         if b == b'\xdc':
@@ -345,7 +353,7 @@ class KFlash:
                         elif b == b'\xdd':
                             partial_packet += b'\xdb'
                         else:
-                            raise Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', b))
+                            raise_exception( Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', b)) )
                     elif b == b'\xdb':  # start of escape sequence
                         in_escape = True
                     elif b == b'\xc0':  # end of packet
@@ -528,6 +536,12 @@ class KFlash:
             return columns, rows
 
         class MAIXLoader:
+            def raise_exception(self, exception):
+                try:
+                    self._port.close()
+                except Exception:
+                    pass
+
             def change_baudrate(self, baudrate):
                 printf(INFO_MSG,"Selected Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
                 out = struct.pack('III', 0, 4, baudrate)
@@ -573,7 +587,7 @@ class KFlash:
                         if retry_count > 3:
                             err = (ERROR_MSG,'Fast mode failed, please use slow mode by add parameter ' + BASH_TIPS['GREEN'] + '--Slow', BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         try:
                             self.greeting()
                             break
@@ -636,7 +650,7 @@ class KFlash:
                 #sys.stdout.write('[RECV one return] raw data: ')
                 while 1:
                     if time.time() - timeout_init > ISP_RECEIVE_TIMEOUT:
-                        raise TimeoutError
+                        self.raise_exception( TimeoutError )
                     c = self._port.read(1)
                     #sys.stdout.write(binascii.hexlify(c).decode())
                     sys.stdout.flush()
@@ -646,7 +660,7 @@ class KFlash:
                 in_escape = False
                 while 1:
                     if time.time() - timeout_init > ISP_RECEIVE_TIMEOUT:
-                        raise TimeoutError
+                        self.raise_exception( TimeoutError )
                     c = self._port.read(1)
                     #sys.stdout.write(binascii.hexlify(c).decode())
                     sys.stdout.flush()
@@ -660,7 +674,7 @@ class KFlash:
                         elif c == b'\xdd':
                             data += b'\xdb'
                         else:
-                            raise Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', c))
+                            self.raise_exception( Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', c)) )
                     elif c == b'\xdb':  # start of escape sequence
                         in_escape = True
 
@@ -794,7 +808,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Index Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -802,7 +816,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Timeout Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -810,7 +824,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Unexcepted Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -825,7 +839,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Unexcepted Return recevied, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -884,7 +898,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Index Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -892,7 +906,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Timeout Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -900,7 +914,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Unexcepted Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -913,7 +927,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         printf(WARN_MSG,"Unexcepted Return recevied, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -986,7 +1000,7 @@ class KFlash:
                             if retry_count > MAX_RETRY_TIMES:
                                 err = (ERROR_MSG,"Error Count Exceeded, Stop Trying",BASH_TIPS['DEFAULT'])
                                 err = tuple2str(err)
-                                raise Exception(err)
+                                self.raise_exception( Exception(err) )
                             continue
                         break
                     address += len(chunk)
@@ -1011,7 +1025,7 @@ class KFlash:
                 except ImportError:
                     err = (ERROR_MSG,'pyelftools must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install pyelftools`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    self.raise_exception( Exception(err) )
 
                 elffile = ELFFile(f)
                 if elffile['e_entry'] != 0x80000000:
@@ -1161,7 +1175,7 @@ class KFlash:
                 if len(list_port_info) == 0:
                     err = (ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
                 list_port_info.sort()
                 if len(list_port_info) == 1:
                     _port = list_port_info[0].device
@@ -1173,7 +1187,7 @@ class KFlash:
                 if(len(list_port_info)==0):
                     err = (ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
                 list_port_info.sort()
                 _port = list_port_info[0].device
                 printf(INFO_MSG,"COM Port Auto Detected, Selected ", _port, BASH_TIPS['DEFAULT'])
@@ -1185,7 +1199,7 @@ class KFlash:
                 except StopIteration:
                     err = (ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
         else:
             _port = args.port
             printf(INFO_MSG,"COM Port Selected Manually: ", _port, BASH_TIPS['DEFAULT'])
@@ -1199,7 +1213,7 @@ class KFlash:
         except FileNotFoundError:
             err = (ERROR_MSG,'Unable to find the firmware at ', args.firmware, BASH_TIPS['DEFAULT'])
             err = tuple2str(err)
-            raise Exception(err)
+            raise_exception( Exception(err) )
 
         with open(args.firmware, 'rb') as f:
             file_header = f.read(4)
@@ -1218,7 +1232,7 @@ class KFlash:
                 else:
                     err = (ERROR_MSG, 'This is an ELF file and cannot be programmed to flash directly:', args.firmware, BASH_TIPS['DEFAULT'] , '\r\nPlease retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
 
         # 1. Greeting.
         printf(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
@@ -1231,7 +1245,7 @@ class KFlash:
             if retry_count > 15:
                 err = (ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
                 err = tuple2str(err)
-                raise Exception(err)
+                raise_exception( Exception(err) )
             if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
                 try:
                     printf('.', end='')
@@ -1323,7 +1337,7 @@ class KFlash:
             if file_format == ProgramFileFormat.FMT_KFPKG:
                 err = (ERROR_MSG, "Unable to load kfpkg to SRAM")
                 err = tuple2str(err)
-                raise Exception(err)
+                raise_exception( Exception(err) )
             elif file_format == ProgramFileFormat.FMT_ELF:
                 self.loader.load_elf_to_sram(firmware_bin)
             else:
@@ -1344,7 +1358,7 @@ class KFlash:
             if(args.terminal == True):
                 open_terminal(False)
             msg = "Burn SRAM OK"
-            raise Exception(msg)
+            raise_exception( Exception(msg) )
 
         # Dangerous, here are dinosaur infested!!!!!
         # Don't touch this code unless you know what you are doing
@@ -1373,7 +1387,7 @@ class KFlash:
                 except zipfile.BadZipFile:
                     err = (ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
 
                 fFlashList = open(os.path.join(tmpdir, 'flash-list.json'), "r")
                 sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
@@ -1388,7 +1402,7 @@ class KFlash:
             if args.key:
                 aes_key = binascii.a2b_hex(args.key)
                 if len(aes_key) != 16:
-                    raise ValueError('AES key must by 16 bytes')
+                    raise_exception( ValueError('AES key must by 16 bytes') )
 
                 self.loader.flash_firmware(firmware_bin.read(), aes_key=aes_key)
             else:
