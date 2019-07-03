@@ -17,28 +17,12 @@ import json
 import re
 import os
 
-def tuple2str(t):
-    ret = ""
-    for i in t:
-        ret += i+" "
-    return ret
-
-g_print_callback = None
-
-def printf(*args, end="\n"):
-    global g_print_callback
-    if g_print_callback:
-        g_print_callback(*args, end=end)
-    else:
-        print(*args, end = end)
-
 
 class KFlash:
     def __init__(self, print_callback = None):
         self.killProcess = False
         self.loader = None
-        global g_print_callback
-        g_print_callback = print_callback
+        self.print_callback = print_callback
 
     def process(self, terminal=True, dev="", baudrate=1500000, board=None, sram = False, file="", callback=None, noansi=False, terminal_auto_size=False, terminal_size=(50, 1), slow_mode = False):
         self.killProcess = False
@@ -72,6 +56,20 @@ class KFlash:
             err = (ERROR_MSG,'PySerial must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install pyserial`',BASH_TIPS['DEFAULT'])
             err = tuple2str(err)
             raise Exception(err)
+
+        def tuple2str(t):
+            ret = ""
+            for i in t:
+                ret += i+" "
+            return ret
+
+        def printf(*args, **kwargs):
+            end = kwargs.pop('end', "\n")
+
+            if self.print_callback:
+                self.print_callback(*args, end=end)
+            else:
+                print(*args, end = end)
 
         def raise_exception(exception):
             if self.loader:
@@ -1096,12 +1094,6 @@ class KFlash:
                     self._port.close()
                     self._kill_process = False
                     raise Exception("Cancel")
-            
-            def printf(self, *args):
-                if self.print_callback:
-                    self.print_callback(args)
-                else:
-                    printf(*args)
 
 
         def open_terminal(reset):
@@ -1421,7 +1413,10 @@ class KFlash:
             printf(WARN_MSG,"Board unknown !! please press reset to boot!!")
 
         printf(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
-        self.loader._port.close()
+        try:
+            self.loader._port.close()
+        except Exception:
+            pass
 
         if(args.terminal == True):
             open_terminal(True)
