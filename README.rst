@@ -189,7 +189,7 @@ Ubuntu, Debian Requirements
     sudo apt update
     sudo apt install python3 python3-pip
     sudo pip3 install pyserial
-    sudo pip3 install pyelftools 
+    sudo pip3 install pyelftools
 
 --------------
 
@@ -214,7 +214,7 @@ CentOS
     sudo ln -s /bin/python3.6 /usr/bin/python3
     sudo ln -s /bin/pip3.6 /usr/bin/pip3
     sudo pip3 install pyserial
-    sudo pip3 install pyelftools 
+    sudo pip3 install pyelftools
 
 Trouble Shooting
 ----------------
@@ -245,6 +245,7 @@ Windows
    **USB-SERIAL CH340(COM13)**.
 
 .. code:: bash
+
     # Using pip, only need once when you install
     pip install kflash
     kflash -p COM13 firmware.bin

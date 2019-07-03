@@ -1088,7 +1088,7 @@ class KFlash:
 
             def kill(self):
                 self._kill_process = True
-    
+
             def checkKillExit(self):
                 if self._kill_process:
                     self._port.close()
@@ -1105,6 +1105,7 @@ class KFlash:
             sys.argv = [sys.argv[0], _port, '115200', '--dtr='+control_signal, '--rts='+control_signal,  '--filter=direct']
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
+
         boards_choices = ["kd233", "dan", "bit", "bit_mic", "goE", "goD", "maixduino", "trainer"]
         if terminal:
             parser = argparse.ArgumentParser()
@@ -1420,7 +1421,7 @@ class KFlash:
 
         if(args.terminal == True):
             open_terminal(True)
-    
+
     def kill(self):
         if self.loader:
             self.loader.kill()
