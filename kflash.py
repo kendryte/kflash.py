@@ -539,6 +539,7 @@ class KFlash:
                     self._port.close()
                 except Exception:
                     pass
+                raise exception
 
             def change_baudrate(self, baudrate):
                 printf(INFO_MSG,"Selected Baudrate: ", baudrate, BASH_TIPS['DEFAULT'])
@@ -1234,85 +1235,89 @@ class KFlash:
 
         while 1:
             self.checkKillExit()
-            retry_count = retry_count + 1
-            if retry_count > 15:
-                err = (ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
-                err = tuple2str(err)
-                raise_exception( Exception(err) )
-            if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
-                try:
-                    printf('.', end='')
-                    self.loader.reset_to_isp_dan()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            elif args.Board == "kd233":
-                try:
-                    printf('_', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            elif args.Board == "goE":
-                try:
-                    printf('*', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            elif args.Board == "goD":
-                try:
-                    printf('#', end='')
-                    self.loader.reset_to_isp_goD()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            else:
-                try:
-                    printf('.', end='')
-                    self.loader.reset_to_isp_dan()
-                    self.loader.greeting()
-                    args.Board = "dan"
-                    printf()
-                    printf(INFO_MSG,"Automatically detected dan/bit/trainer",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
-                try:
-                    printf('_', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    args.Board = "kd233"
-                    printf()
-                    printf(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
-                try:
-                    printf('.', end='')
-                    self.loader.reset_to_isp_goD()
-                    self.loader.greeting()
-                    args.Board = "goD"
-                    printf()
-                    printf(INFO_MSG,"Automatically detected goD",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
-                try:
-                    # Magic, just repeat, don't remove, it may unstable, don't know why.
-                    printf('_', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    args.Board = "kd233"
-                    printf()
-                    printf(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
+            try:
+                retry_count = retry_count + 1
+                if retry_count > 15:
+                    err = (ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
+                    err = tuple2str(err)
+                    raise_exception( Exception(err) )
+                if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
+                    try:
+                        printf('.', end='')
+                        self.loader.reset_to_isp_dan()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                elif args.Board == "kd233":
+                    try:
+                        printf('_', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                elif args.Board == "goE":
+                    try:
+                        printf('*', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                elif args.Board == "goD":
+                    try:
+                        printf('#', end='')
+                        self.loader.reset_to_isp_goD()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                else:
+                    try:
+                        printf('.', end='')
+                        self.loader.reset_to_isp_dan()
+                        self.loader.greeting()
+                        args.Board = "dan"
+                        printf()
+                        printf(INFO_MSG,"Automatically detected dan/bit/trainer",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+                    try:
+                        printf('_', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        args.Board = "kd233"
+                        printf()
+                        printf(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+                    try:
+                        printf('.', end='')
+                        self.loader.reset_to_isp_goD()
+                        self.loader.greeting()
+                        args.Board = "goD"
+                        printf()
+                        printf(INFO_MSG,"Automatically detected goD",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+                    try:
+                        # Magic, just repeat, don't remove, it may unstable, don't know why.
+                        printf('_', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        args.Board = "kd233"
+                        printf()
+                        printf(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+            except Exception as e:
+                printf()
+                raise_exception( Exception("Greeting fail, check serial port ("+str(e)+")" ) )
 
         # Don't remove this line
         # Dangerous, here are dinosaur infested!!!!!
