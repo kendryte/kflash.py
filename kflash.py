@@ -17,24 +17,22 @@ import json
 import re
 import os
 
-class KFlash:
-    PRINT_CALLBACK = None
 
+class KFlash:
     def __init__(self, print_callback = None):
         self.killProcess = False
         self.loader = None
-        self.PRINT_CALLBACK = print_callback
+        self.print_callback = print_callback
 
     @staticmethod
     def log(*args, **kwargs):
-        if KFlash.PRINT_CALLBACK:
-            KFlash.PRINT_CALLBACK(*args, **kwargs)
+        if KFlash.print_callback:
+            KFlash.print_callback(*args, **kwargs)
         else:
             print(*args, **kwargs)
 
-    def process(self, terminal=True, dev="", baudrate=1500000, board="DEFAULT", sram = False, file="", callback=None, noansi=False):
+    def process(self, terminal=True, dev="", baudrate=1500000, board=None, sram = False, file="", callback=None, noansi=False, terminal_auto_size=False, terminal_size=(50, 1), slow_mode = False):
         self.killProcess = False
-
         BASH_TIPS = dict(NORMAL='\033[0m',BOLD='\033[1m',DIM='\033[2m',UNDERLINE='\033[4m',
                             DEFAULT='\033[0m', RED='\033[31m', YELLOW='\033[33m', GREEN='\033[32m',
                             BG_DEFAULT='\033[49m', BG_WHITE='\033[107m')
@@ -57,6 +55,14 @@ class KFlash:
             for i in t:
                 ret += i+" "
             return ret
+
+        def raise_exception(exception):
+            if self.loader:
+                try:
+                    self.loader._port.close()
+                except Exception:
+                    pass
+            raise exception
 
         try:
             from enum import Enum
@@ -119,7 +125,7 @@ class KFlash:
             def __init__(self, key):
 
                 if len(key) not in (16, 24, 32):
-                    raise ValueError('Invalid key size')
+                    raise_exception( ValueError('Invalid key size') )
 
                 rounds = self.number_of_rounds[len(key)]
 
@@ -192,7 +198,7 @@ class KFlash:
                 'Encrypt a block of plain text using the AES block cipher.'
 
                 if len(plaintext) != 16:
-                    raise ValueError('wrong block length')
+                    raise_exception( ValueError('wrong block length') )
 
                 rounds = len(self._Ke) - 1
                 (s1, s2, s3) = [1, 2, 3]
@@ -226,7 +232,7 @@ class KFlash:
                 'Decrypt a block of cipher text using the AES block cipher.'
 
                 if len(ciphertext) != 16:
-                    raise ValueError('wrong block length')
+                    raise_exception( ValueError('wrong block length') )
 
                 rounds = len(self._Kd) - 1
                 (s1, s2, s3) = [3, 2, 1]
@@ -263,14 +269,14 @@ class KFlash:
                 if iv is None:
                     self._last_cipherblock = [ 0 ] * 16
                 elif len(iv) != 16:
-                    raise ValueError('initialization vector must be 16 bytes')
+                    raise_exception( ValueError('initialization vector must be 16 bytes') )
                 else:
                     self._last_cipherblock = iv
 
 
             def encrypt(self, plaintext):
                 if len(plaintext) != 16:
-                    raise ValueError('plaintext block must be 16 bytes')
+                    raise_exception( ValueError('plaintext block must be 16 bytes') )
 
                 precipherblock = [ (p ^ l) for (p, l) in zip(plaintext, self._last_cipherblock) ]
                 self._last_cipherblock = self._aes.encrypt(precipherblock)
@@ -279,7 +285,7 @@ class KFlash:
 
             def decrypt(self, ciphertext):
                 if len(ciphertext) != 16:
-                    raise ValueError('ciphertext block must be 16 bytes')
+                    raise_exception( ValueError('ciphertext block must be 16 bytes') )
 
                 cipherblock = ciphertext
                 plaintext = [ (p ^ l) for (p, l) in zip(self._aes.decrypt(cipherblock), self._last_cipherblock) ]
@@ -326,7 +332,7 @@ class KFlash:
                 waiting = port.inWaiting()
                 read_bytes = port.read(1 if waiting == 0 else waiting)
                 if read_bytes == b'':
-                    raise Exception("Timed out waiting for packet %s" % ("header" if partial_packet is None else "content"))
+                    raise_exception( Exception("Timed out waiting for packet %s" % ("header" if partial_packet is None else "content")) )
                 for b in read_bytes:
 
                     if type(b) is int:
@@ -336,7 +342,7 @@ class KFlash:
                         if b == b'\xc0':
                             partial_packet = b""
                         else:
-                            raise Exception('Invalid head of packet (%r)' % b)
+                            raise_exception( Exception('Invalid head of packet (%r)' % b) )
                     elif in_escape:  # part-way through escape sequence
                         in_escape = False
                         if b == b'\xdc':
@@ -344,7 +350,7 @@ class KFlash:
                         elif b == b'\xdd':
                             partial_packet += b'\xdb'
                         else:
-                            raise Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', b))
+                            raise_exception( Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', b)) )
                     elif b == b'\xdb':  # start of escape sequence
                         in_escape = True
                     elif b == b'\xc0':  # end of packet
@@ -524,10 +530,12 @@ class KFlash:
             def get_terminal_size(fallback=(100, 24), terminal = False):
                 try:
                     columns, rows = TerminalSize.getTerminalSize()
+                    if not terminal:
+                        if not terminal_auto_size:
+                            columns, rows = terminal_size
                 except:
                     columns, rows = fallback
-                if not terminal:
-                    columns, rows = (50,1)
+
                 return columns, rows
 
         class MAIXLoader:
@@ -576,7 +584,7 @@ class KFlash:
                         if retry_count > 3:
                             err = (ERROR_MSG,'Fast mode failed, please use slow mode by add parameter ' + BASH_TIPS['GREEN'] + '--Slow', BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         try:
                             self.greeting()
                             break
@@ -649,7 +657,7 @@ class KFlash:
                 in_escape = False
                 while 1:
                     if time.time() - timeout_init > ISP_RECEIVE_TIMEOUT:
-                        raise TimeoutError
+                        self.raise_exception( TimeoutError )
                     c = self._port.read(1)
                     #sys.stdout.write(binascii.hexlify(c).decode())
                     sys.stdout.flush()
@@ -663,7 +671,7 @@ class KFlash:
                         elif c == b'\xdd':
                             data += b'\xdb'
                         else:
-                            raise Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', c))
+                            self.raise_exception( Exception('Invalid SLIP escape (%r%r)' % (b'\xdb', c)) )
                     elif c == b'\xdb':  # start of escape sequence
                         in_escape = True
 
@@ -732,51 +740,51 @@ class KFlash:
                 self._port.setDTR (False)
                 time.sleep(0.1)
 
-            # maix go for old cmsis-dap firmware
+            # maix goD for old cmsis-dap firmware
             def reset_to_isp_goD(self):
                 self._port.setDTR (True)   ## output 0
                 self._port.setRTS (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #KFlash.log('-- RESET to LOW --')
                 # Pull reset down and keep 10ms
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #KFlash.log('-- RESET to HIGH, BOOT --')
                 # Pull IO16 to low and release reset
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
             def reset_to_boot_goD(self):
                 self._port.setDTR (False)
                 self._port.setRTS (False)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #KFlash.log('-- RESET to LOW --')
                 # Pull reset down and keep 10ms
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #KFlash.log('-- RESET to HIGH, BOOT --')
                 # Pull IO16 to low and release reset
                 self._port.setRTS (True)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
 
-            # maix go for openec or new cmsis-dap  firmware
+            # maix goE for openec or new cmsis-dap  firmware
             def reset_to_boot_maixgo(self):
                 self._port.setDTR (False)
                 self._port.setRTS (False)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #KFlash.log('-- RESET to LOW --')
                 # Pull reset down and keep 10ms
                 self._port.setRTS (False)
                 self._port.setDTR (True)
-                time.sleep(0.01)
+                time.sleep(0.1)
                 #KFlash.log('-- RESET to HIGH, BOOT --')
                 # Pull IO16 to low and release reset
                 self._port.setRTS (False)
                 self._port.setDTR (False)
-                time.sleep(0.01)
+                time.sleep(0.1)
 
             def greeting(self):
                 self._port.write(b'\xc0\xc2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc0')
@@ -797,7 +805,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Index Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -805,7 +813,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Timeout Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -813,7 +821,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Unexcepted Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -828,7 +836,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to Connect to K210's Stub",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Unexcepted Return recevied, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -887,7 +895,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Index Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -895,7 +903,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Timeout Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -903,7 +911,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Unexcepted Error, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -916,7 +924,7 @@ class KFlash:
                         if retry_count > MAX_RETRY_TIMES:
                             err = (ERROR_MSG,"Failed to initialize flash",BASH_TIPS['DEFAULT'])
                             err = tuple2str(err)
-                            raise Exception(err)
+                            self.raise_exception( Exception(err) )
                         KFlash.log(WARN_MSG,"Unexcepted Return recevied, retrying...",BASH_TIPS['DEFAULT'])
                         time.sleep(0.1)
                         continue
@@ -1014,7 +1022,7 @@ class KFlash:
                 except ImportError:
                     err = (ERROR_MSG,'pyelftools must be installed, run '+BASH_TIPS['GREEN']+'`' + ('pip', 'pip3')[sys.version_info > (3, 0)] + ' install pyelftools`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    self.raise_exception( Exception(err) )
 
                 elffile = ELFFile(f)
                 if elffile['e_entry'] != 0x80000000:
@@ -1143,7 +1151,7 @@ class KFlash:
                 if len(list_port_info) == 0:
                     err = (ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
                 list_port_info.sort()
                 if len(list_port_info) == 1:
                     _port = list_port_info[0].device
@@ -1155,7 +1163,7 @@ class KFlash:
                 if(len(list_port_info)==0):
                     err = (ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
                 list_port_info.sort()
                 _port = list_port_info[0].device
                 KFlash.log(INFO_MSG,"COM Port Auto Detected, Selected ", _port, BASH_TIPS['DEFAULT'])
@@ -1167,7 +1175,7 @@ class KFlash:
                 except StopIteration:
                     err = (ERROR_MSG,"No vaild COM Port found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`--port/-p`',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
         else:
             _port = args.port
             KFlash.log(INFO_MSG,"COM Port Selected Manually: ", _port, BASH_TIPS['DEFAULT'])
@@ -1181,7 +1189,7 @@ class KFlash:
         except FileNotFoundError:
             err = (ERROR_MSG,'Unable to find the firmware at ', args.firmware, BASH_TIPS['DEFAULT'])
             err = tuple2str(err)
-            raise Exception(err)
+            raise_exception( Exception(err) )
 
         with open(args.firmware, 'rb') as f:
             file_header = f.read(4)
@@ -1200,94 +1208,98 @@ class KFlash:
                 else:
                     err = (ERROR_MSG, 'This is an ELF file and cannot be programmed to flash directly:', args.firmware, BASH_TIPS['DEFAULT'] , '\r\nPlease retry:', args.firmware + '.bin', BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
 
         # 1. Greeting.
-        KFlash.log(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
+        printf(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
 
         retry_count = 0
 
         while 1:
             self.checkKillExit()
-            retry_count = retry_count + 1
-            if retry_count > 15:
-                err = (ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
-                err = tuple2str(err)
-                raise Exception(err)
-            if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
-                try:
-                    KFlash.log('.', end='')
-                    self.loader.reset_to_isp_dan()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            elif args.Board == "kd233":
-                try:
-                    KFlash.log('_', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            elif args.Board == "goE":
-                try:
-                    KFlash.log('*', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            elif args.Board == "goD":
-                try:
-                    KFlash.log('#', end='')
-                    self.loader.reset_to_isp_goD()
-                    self.loader.greeting()
-                    break
-                except TimeoutError:
-                    pass
-            else:
-                try:
-                    KFlash.log('.', end='')
-                    self.loader.reset_to_isp_dan()
-                    self.loader.greeting()
-                    args.Board = "dan"
-                    KFlash.log()
-                    KFlash.log(INFO_MSG,"Automatically detected dan/bit/trainer",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
-                try:
-                    KFlash.log('_', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    args.Board = "kd233"
-                    KFlash.log()
-                    KFlash.log(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
-                try:
-                    KFlash.log('.', end='')
-                    self.loader.reset_to_isp_goD()
-                    self.loader.greeting()
-                    args.Board = "goD"
-                    KFlash.log()
-                    KFlash.log(INFO_MSG,"Automatically detected goD",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
-                try:
-                    # Magic, just repeat, don't remove, it may unstable, don't know why.
-                    KFlash.log('_', end='')
-                    self.loader.reset_to_isp_kd233()
-                    self.loader.greeting()
-                    args.Board = "kd233"
-                    KFlash.log()
-                    KFlash.log(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
-                    break
-                except TimeoutError:
-                    pass
+            try:
+                retry_count = retry_count + 1
+                if retry_count > 15:
+                    err = (ERROR_MSG,"No vaild Kendryte K210 found in Auto Detect, Check Your Connection or Specify One by"+BASH_TIPS['GREEN']+'`-p '+('/dev/ttyUSB0', 'COM3')[sys.platform == 'win32']+'`',BASH_TIPS['DEFAULT'])
+                    err = tuple2str(err)
+                    raise_exception( Exception(err) )
+                if args.Board == "dan" or args.Board == "bit" or args.Board == "trainer":
+                    try:
+                        KFlash.log('.', end='')
+                        self.loader.reset_to_isp_dan()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                elif args.Board == "kd233":
+                    try:
+                        KFlash.log('_', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                elif args.Board == "goE":
+                    try:
+                        KFlash.log('*', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                elif args.Board == "goD":
+                    try:
+                        KFlash.log('#', end='')
+                        self.loader.reset_to_isp_goD()
+                        self.loader.greeting()
+                        break
+                    except TimeoutError:
+                        pass
+                else:
+                    try:
+                        KFlash.log('.', end='')
+                        self.loader.reset_to_isp_dan()
+                        self.loader.greeting()
+                        args.Board = "dan"
+                        KFlash.log()
+                        KFlash.log(INFO_MSG,"Automatically detected dan/bit/trainer",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+                    try:
+                        KFlash.log('_', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        args.Board = "kd233"
+                        KFlash.log()
+                        KFlash.log(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+                    try:
+                        KFlash.log('.', end='')
+                        self.loader.reset_to_isp_goD()
+                        self.loader.greeting()
+                        args.Board = "goD"
+                        KFlash.log()
+                        KFlash.log(INFO_MSG,"Automatically detected goD",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+                    try:
+                        # Magic, just repeat, don't remove, it may unstable, don't know why.
+                        KFlash.log('_', end='')
+                        self.loader.reset_to_isp_kd233()
+                        self.loader.greeting()
+                        args.Board = "kd233"
+                        KFlash.log()
+                        KFlash.log(INFO_MSG,"Automatically detected goE/kd233",BASH_TIPS['DEFAULT'])
+                        break
+                    except TimeoutError:
+                        pass
+            except Exception as e:
+                KFlash.log()
+                raise_exception( Exception("Greeting fail, check serial port ("+str(e)+")" ) )
 
         # Don't remove this line
         # Dangerous, here are dinosaur infested!!!!!
@@ -1305,7 +1317,7 @@ class KFlash:
             if file_format == ProgramFileFormat.FMT_KFPKG:
                 err = (ERROR_MSG, "Unable to load kfpkg to SRAM")
                 err = tuple2str(err)
-                raise Exception(err)
+                raise_exception( Exception(err) )
             elif file_format == ProgramFileFormat.FMT_ELF:
                 self.loader.load_elf_to_sram(firmware_bin)
             else:
@@ -1326,7 +1338,7 @@ class KFlash:
             if(args.terminal == True):
                 open_terminal(False)
             msg = "Burn SRAM OK"
-            raise Exception(msg)
+            raise_exception( Exception(msg) )
 
         # Dangerous, here are dinosaur infested!!!!!
         # Don't touch this code unless you know what you are doing
@@ -1355,7 +1367,7 @@ class KFlash:
                 except zipfile.BadZipFile:
                     err = (ERROR_MSG,'Unable to Decompress the kfpkg, your file might be corrupted.',BASH_TIPS['DEFAULT'])
                     err = tuple2str(err)
-                    raise Exception(err)
+                    raise_exception( Exception(err) )
 
                 fFlashList = open(os.path.join(tmpdir, 'flash-list.json'), "r")
                 sFlashList = re.sub(r'"address": (.*),', r'"address": "\1",', fFlashList.read()) #Pack the Hex Number in json into str
@@ -1370,7 +1382,7 @@ class KFlash:
             if args.key:
                 aes_key = binascii.a2b_hex(args.key)
                 if len(aes_key) != 16:
-                    raise ValueError('AES key must by 16 bytes')
+                    raise_exception( ValueError('AES key must by 16 bytes') )
 
                 self.loader.flash_firmware(firmware_bin.read(), aes_key=aes_key)
             else:
@@ -1389,7 +1401,10 @@ class KFlash:
             KFlash.log(WARN_MSG,"Board unknown !! please press reset to boot!!")
 
         KFlash.log(INFO_MSG,"Rebooting...", BASH_TIPS['DEFAULT'])
-        self.loader._port.close()
+        try:
+            self.loader._port.close()
+        except Exception:
+            pass
 
         if(args.terminal == True):
             open_terminal(True)
