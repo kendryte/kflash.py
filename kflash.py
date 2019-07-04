@@ -19,6 +19,8 @@ import os
 
 
 class KFlash:
+    print_callback = None
+
     def __init__(self, print_callback = None):
         self.killProcess = False
         self.loader = None
@@ -997,7 +999,7 @@ class KFlash:
                             if retry_count > MAX_RETRY_TIMES:
                                 err = (ERROR_MSG,"Error Count Exceeded, Stop Trying",BASH_TIPS['DEFAULT'])
                                 err = tuple2str(err)
-                                raise Exception(err)
+                                self.raise_exception( Exception(err) )
                             continue
                         break
                     address += len(chunk)
@@ -1104,24 +1106,36 @@ class KFlash:
             serial.tools.miniterm.main(default_port=_port, default_baudrate=115200, default_dtr=control_signal_b, default_rts=control_signal_b)
             sys.exit(0)
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
-        parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
-        parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
-        parser.add_argument("-l", "--bootloader", help="Bootloader bin path", required=False, default=None)
-        parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
-        parser.add_argument("-v", "--version", help="Print version.", action='version', version='0.8.3')
-        parser.add_argument("--verbose", help="Increase output verbosity", default=False, action="store_true")
-        parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
-        parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
-        parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
-
-        parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goD, goE or trainer")
-        parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
+        boards_choices = ["kd233", "dan", "bit", "bit_mic", "goE", "goD", "maixduino", "trainer"]
         if terminal:
+            parser = argparse.ArgumentParser()
+            parser.add_argument("-p", "--port", help="COM Port", default="DEFAULT")
+            parser.add_argument("-f", "--flash", help="SPI Flash type, 0 for SPI3, 1 for SPI0", default=1)
+            parser.add_argument("-b", "--baudrate", type=int, help="UART baudrate for uploading firmware", default=115200)
+            parser.add_argument("-l", "--bootloader", help="Bootloader bin path", required=False, default=None)
+            parser.add_argument("-k", "--key", help="AES key in hex, if you need encrypt your firmware.", required=False, default=None)
+            parser.add_argument("-v", "--version", help="Print version.", action='version', version='0.8.3')
+            parser.add_argument("--verbose", help="Increase output verbosity", default=False, action="store_true")
+            parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
+            parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
+            parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
+            parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goD, goE or trainer")
+            parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
             parser.add_argument("firmware", help="firmware bin path")
-
-        args = parser.parse_args()
+            args = parser.parse_args()
+        else:
+            args = argparse.Namespace()
+            setattr(args, "port", "DEFAULT")
+            setattr(args, "flash", 1)
+            setattr(args, "baudrate", 115200)
+            setattr(args, "bootloader", None)
+            setattr(args, "key", None)
+            setattr(args, "verbose", False)
+            setattr(args, "terminal", False)
+            setattr(args, "noansi", False)
+            setattr(args, "sram", False)
+            setattr(args, "Board", None)
+            setattr(args, "Slow", False)
 
         # udpate args for none terminal call
         if not terminal:
@@ -1131,6 +1145,9 @@ class KFlash:
             args.sram = sram
             args.Board = board
             args.firmware = file
+
+        if args.Board == "maixduino" or args.Board == "bit_mic":
+            args.Board = "goE"
 
         if (args.noansi == True):
             BASH_TIPS = dict(NORMAL='',BOLD='',DIM='',UNDERLINE='',
@@ -1211,7 +1228,7 @@ class KFlash:
                     raise_exception( Exception(err) )
 
         # 1. Greeting.
-        printf(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
+        KFlash.log(INFO_MSG,"Trying to Enter the ISP Mode...",BASH_TIPS['DEFAULT'])
 
         retry_count = 0
 
@@ -1428,7 +1445,7 @@ def main():
     except Exception as e:
         if str(e) == "Burn SRAM OK":
             sys.exit(0)
-        kflash.printf(str(e))
+        kflash.log(str(e))
         sys.exit(1)
 
 if __name__ == '__main__':
