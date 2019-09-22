@@ -1119,7 +1119,7 @@ class KFlash:
             parser.add_argument("-t", "--terminal", help="Start a terminal after finish (Python miniterm)", default=False, action="store_true")
             parser.add_argument("-n", "--noansi", help="Do not use ANSI colors, recommended in Windows CMD", default=False, action="store_true")
             parser.add_argument("-s", "--sram", help="Download firmware to SRAM and boot", default=False, action="store_true")
-            parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board, e.g. kd233, dan, bit, goD, goE or trainer")
+            parser.add_argument("-B", "--Board",required=False, type=str, help="Select dev board", choices=boards_choices)
             parser.add_argument("-S", "--Slow",required=False, help="Slow download mode", default=False)
             parser.add_argument("firmware", help="firmware bin path")
             args = parser.parse_args()
